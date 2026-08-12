@@ -12,10 +12,10 @@ Chaque valeur/règle fiscale utilisée dans `src/lib/tax-rules/` doit avoir une 
 
 | Règle | Valeur | Année | Source (URL) | Article / réf. | Date de récupération | Vérifié par |
 |---|---|---|---|---|---|---|
-| Barème progressif IR, 1 part | 0% ≤11 600 / 11% ≤29 579 / 30% ≤84 577 / 41% ≤181 917 / 45% >181 917 | 2025 | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 | CGI art. 197, I-1°-A/B (LF 2026, art. 4) | 2026-08-12 | à faire (cf. `docs/updates/`) |
-| Décote, foyer 1 part (célibataire) | 897 € − 45,25% × impôt brut, nul au-delà d'un impôt brut ≈1 982,32€ | 2025 | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 | CGI art. 197, I-4°-a | 2026-08-12 | à faire (cf. `docs/updates/`) |
-| Déduction forfaitaire 10% — plancher | 509 € | 2025 | https://bofip.impots.gouv.fr/bofip/10855-PGP.html/identifiant=BOI-BAREME-000035-20260217 | CGI art. 83, 3° ; BOI-BAREME-000035 §IV | 2026-08-12 | à faire (cf. `docs/updates/`) |
-| Déduction forfaitaire 10% — plafond | 14 555 € | 2025 | https://bofip.impots.gouv.fr/bofip/10855-PGP.html/identifiant=BOI-BAREME-000035-20260217 | CGI art. 83, 3° ; BOI-BAREME-000035 §IV | 2026-08-12 | à faire (cf. `docs/updates/`) |
+| Barème progressif IR, 1 part | 0% ≤11 600 / 11% ≤29 579 / 30% ≤84 577 / 41% ≤181 917 / 45% >181 917 | 2025 | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 | CGI art. 197, I-1°-A/B (LF 2026, art. 4) | 2026-08-12 | simulateur officiel, cf. `docs/updates/2025-verification-increment-2.md` |
+| Décote, foyer 1 part (célibataire) | 897 € − 45,25% × impôt brut, nul au-delà d'un impôt brut ≈1 982,32€ | 2025 | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 | CGI art. 197, I-4°-a | 2026-08-12 | simulateur officiel, cf. `docs/updates/2025-verification-increment-2.md` |
+| Déduction forfaitaire 10% — plancher | 509 € | 2025 | https://bofip.impots.gouv.fr/bofip/10855-PGP.html/identifiant=BOI-BAREME-000035-20260217 | CGI art. 83, 3° ; BOI-BAREME-000035 §IV | 2026-08-12 | simulateur officiel, cf. `docs/updates/2025-verification-increment-2.md` |
+| Déduction forfaitaire 10% — plafond | 14 555 € | 2025 | https://bofip.impots.gouv.fr/bofip/10855-PGP.html/identifiant=BOI-BAREME-000035-20260217 | CGI art. 83, 3° ; BOI-BAREME-000035 §IV | 2026-08-12 | simulateur officiel, cf. `docs/updates/2025-verification-increment-2.md` |
 | Arrondi bases/impôt | à l'euro le plus proche, 0,50 arrondi au-dessus | toutes années | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051219510 | CGI art. 1657 | 2026-08-12 | — |
 | Case 1AJ = salaire net imposable (≠ brut, ≠ net à payer) | — | 2025 | https://www.impots.gouv.fr/particulier/salaires-et-assimiles | Notice 2042 | 2026-08-12 | — |
 
