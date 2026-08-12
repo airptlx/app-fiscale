@@ -18,7 +18,7 @@ describe("ResultPage", () => {
 
   it("renders the three expected lines for the exact-path scenario", async () => {
     seedAnswers({
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
     });
@@ -31,7 +31,7 @@ describe("ResultPage", () => {
 
   it("renders a warning for the estimation-path scenario", async () => {
     seedAnswers({
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": false,
       "salaire-brut-annuel-2025": 35_000,
     });
@@ -41,10 +41,10 @@ describe("ResultPage", () => {
     expect(screen.getByText(/utilisé ici/i)).toBeInTheDocument();
   });
 
-  it("renders the unsupported-situation message when situation-familiale-simple is false", async () => {
-    seedAnswers({ "situation-familiale-simple": false });
+  it("renders the unsupported-situation message when situation-conjugale is 'autre'", async () => {
+    seedAnswers({ "situation-conjugale": "autre" });
     render(<ResultPage />);
 
-    await screen.findByText(/seule la situation/i);
+    await screen.findByText(/parent isolé/i);
   });
 });

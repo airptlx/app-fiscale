@@ -25,16 +25,22 @@ Exemple : au lieu de "Optez-vous pour l'abattement forfaitaire de 10% ou les fra
 **Inclus :**
 - Traitements et salaires, un ou deux revenus (couple), lignes 1AJ/1BJ.
 - Frais professionnels : abattement 10% vs frais réels (question simple, calcul automatique du régime le plus avantageux).
-- Situation familiale : célibataire, marié/pacsé, avec ou sans enfants (configurations courantes).
+- Situation familiale : célibataire sans enfant, ou marié/pacsé avec ou sans enfants (quotient familial, plafonnement général, décote spécifique couple). Le régime « parent isolé » (célibataire avec enfant(s) à charge, demi-part majorée) est nuancé ci-dessous, en roadmap plutôt qu'en inclus direct.
 - Taux de prélèvement à la source (PAS) : individualisé, personnalisé, neutre — explication du choix et grille de taux neutre.
 - 3 à 5 crédits/déductions courants : dons, frais de garde d'enfants, emploi à domicile, versements PER.
 - Écran de résultat : liste des lignes à remplir + explications + avertissement.
 
-**Explicitement différé (phase 2/3) :**
-- Indépendants, BIC/BNC, micro-entreprise.
-- Revenus fonciers, revenus de capitaux mobiliers, plus-values.
+**Roadmap « revenus annexes » (planifiée, incréments dédiés — voir plan incrément 4)** — chacun de ces points nécessite son propre cycle Plan Mode avant implémentation, distinct du cas traitements et salaires :
+- Allocations chômage (case 1AP).
+- Pensions de retraite (case 1AS).
+- Revenus fonciers (micro-foncier vs réel).
+- Revenus indépendants (micro-BIC/micro-BNC).
+- Célibataire avec enfant(s) à charge (« parent isolé », demi-part majorée et plafond spécifique — distinct du cas couple+enfants, cf. `docs/tax-rules-sources.md`).
+
+**Explicitement différé, hors roadmap actuelle :**
+- Indépendants au régime réel (au-delà du micro-BIC/micro-BNC planifié ci-dessus), plus-values, revenus de capitaux mobiliers.
 - Non-résidents / expatriés.
-- Situations familiales complexes (garde alternée, rattachement d'enfants majeurs, veuvage).
+- Situations familiales complexes autres que parent isolé (garde alternée, rattachement d'enfants majeurs, veuvage).
 - Dispositifs de défiscalisation niche (Pinel, etc.).
 
 ## Exigences non-fonctionnelles

@@ -15,7 +15,6 @@ export function useDisclaimer() {
     // Lecture unique de localStorage au montage — cf. plan incrément 3, décision n°2.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAcknowledged(loadDisclaimerAcknowledged());
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsHydrated(true);
   }, []);
 

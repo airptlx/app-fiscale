@@ -8,8 +8,8 @@ Le mapping technique (code de case, régime fiscal applicable) reste invisible j
 
 ## Sections prévues (v1)
 
-1. **Situation familiale** — célibataire / marié-pacsé, enfants à charge.
-2. **Revenus** — salaire(s), un ou deux employeurs.
+1. **Situation familiale** — implémentée (incrément 4) : célibataire / marié-pacsé / autre (cul-de-sac non supporté), puis nombre d'enfants à charge pour un couple (`src/lib/tax-rules/2025/questions.ts` : `situation-conjugale`, `nombre-enfants-a-charge`). Le célibataire avec enfant(s) — régime « parent isolé » — n'est volontairement pas encore couvert : voir plan incrément 4, décision n°1.
+2. **Revenus** — implémentée (incréments 2 et 4) : salaire, un ou deux employeurs (vous / conjoint·e), fiche de paie disponible ou salaire brut estimé pour chacun (`fiche-paie-disponible[-conjoint]`, `salaire-net-imposable-2025[-conjoint]`, `salaire-brut-annuel-2025[-conjoint]`).
 3. **Frais professionnels** — question simple sur les frais non remboursés (détermine en interne abattement 10% vs frais réels).
 4. **Prélèvement à la source** — situation actuelle, pour déterminer le taux à vérifier/déclarer.
 5. **Crédits et déductions courants** — dons, garde d'enfants, emploi à domicile, PER (questions ciblées, une par dispositif).

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { UnsupportedSituationError } from "../errors";
-import { computeDeclaration, computeProgressiveTax, computeTaxableIncome } from "./compute";
+import {
+  computeDeclaration,
+  computeParts,
+  computeProgressiveTax,
+  computeTaxableIncome,
+} from "./compute";
 import { estimateNetImposableFromBrut } from "./estimation";
 
 describe("computeTaxableIncome (abattement 10%, revenus 2025)", () => {
@@ -15,7 +20,7 @@ describe("computeTaxableIncome (abattement 10%, revenus 2025)", () => {
   });
 });
 
-describe("computeProgressiveTax (barème + décote 2025, 1 part)", () => {
+describe("computeProgressiveTax (barème + décote célibataire 2025, 1 part)", () => {
   it("is zero below the first bracket threshold", () => {
     expect(computeProgressiveTax(10_800)).toBe(0);
   });
@@ -39,11 +44,40 @@ describe("estimateNetImposableFromBrut", () => {
   });
 });
 
-describe("computeDeclaration (2025, single filer / one salary / 10% abattement)", () => {
+describe("computeParts (quotient familial, cas général)", () => {
+  it("is 1 for a single filer", () => {
+    expect(computeParts({ "situation-conjugale": "celibataire" })).toBe(1);
+  });
+  it("ignores a stray nombre-enfants-a-charge for a single filer (parent isolé non supporté)", () => {
+    expect(
+      computeParts({ "situation-conjugale": "celibataire", "nombre-enfants-a-charge": 2 }),
+    ).toBe(1);
+  });
+  it("is 2 for a couple with no children", () => {
+    expect(computeParts({ "situation-conjugale": "couple" })).toBe(2);
+  });
+  it("adds a half-part for the 1st child", () => {
+    expect(
+      computeParts({ "situation-conjugale": "couple", "nombre-enfants-a-charge": 1 }),
+    ).toBe(2.5);
+  });
+  it("adds a half-part for the 2nd child", () => {
+    expect(
+      computeParts({ "situation-conjugale": "couple", "nombre-enfants-a-charge": 2 }),
+    ).toBe(3);
+  });
+  it("adds a full part for the 3rd child onward", () => {
+    expect(
+      computeParts({ "situation-conjugale": "couple", "nombre-enfants-a-charge": 3 }),
+    ).toBe(4);
+  });
+});
+
+describe("computeDeclaration (2025, célibataire / un salaire / abattement 10%)", () => {
   it("produces the three expected lines for a 28 000€ net imposable salary (exact path)", () => {
     const result = computeDeclaration(
       {
-        "situation-familiale-simple": true,
+        "situation-conjugale": "celibataire",
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 28_000,
       },
@@ -57,10 +91,27 @@ describe("computeDeclaration (2025, single filer / one salary / 10% abattement)"
     expect(result.warnings).toBeUndefined();
   });
 
+  it("ignores a stray nombre-enfants-a-charge answer on the célibataire branch", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "nombre-enfants-a-charge": 2,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.lines).toEqual([
+      expect.objectContaining({ code: "1AJ", value: 28_000 }),
+      expect.objectContaining({ value: 25_200 }),
+      expect.objectContaining({ value: 1_276 }),
+    ]);
+  });
+
   it("produces the same downstream result via the estimation path (35 000€ brut -> 28 000€ estimé)", () => {
     const result = computeDeclaration(
       {
-        "situation-familiale-simple": true,
+        "situation-conjugale": "celibataire",
         "fiche-paie-disponible": false,
         "salaire-brut-annuel-2025": 35_000,
       },
@@ -79,14 +130,14 @@ describe("computeDeclaration (2025, single filer / one salary / 10% abattement)"
     expect(() => computeDeclaration({}, 2024)).toThrow();
   });
 
-  it("rejects a year even when situation-familiale-simple would also be unsupported (year check runs first)", () => {
-    expect(() => computeDeclaration({ "situation-familiale-simple": false }, 2024)).not.toThrow(
-      UnsupportedSituationError,
-    );
+  it("rejects a year even when situation-conjugale would also be unsupported (year check runs first)", () => {
+    expect(() =>
+      computeDeclaration({ "situation-conjugale": "autre" }, 2024),
+    ).not.toThrow(UnsupportedSituationError);
   });
 
-  it("throws UnsupportedSituationError when situation-familiale-simple is false", () => {
-    expect(() => computeDeclaration({ "situation-familiale-simple": false }, 2025)).toThrow(
+  it("throws UnsupportedSituationError when situation-conjugale is 'autre'", () => {
+    expect(() => computeDeclaration({ "situation-conjugale": "autre" }, 2025)).toThrow(
       UnsupportedSituationError,
     );
   });
@@ -99,5 +150,88 @@ describe("computeDeclaration (2025, single filer / one salary / 10% abattement)"
       expect(e).toBeInstanceOf(UnsupportedSituationError);
       expect((e as Error).message.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("computeDeclaration (2025, couple, second salary, quotient familial)", () => {
+  it("sums both salaries (1AJ + 1BJ) with each their own abattement, no children", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 0,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "conjoint-a-un-salaire": true,
+        "fiche-paie-disponible-conjoint": true,
+        "salaire-net-imposable-2025-conjoint": 20_000,
+      },
+      2025,
+    );
+    expect(result.lines).toEqual([
+      expect.objectContaining({ code: "1AJ", value: 20_000 }),
+      expect.objectContaining({ code: "1BJ", value: 20_000 }),
+      expect.objectContaining({ value: 36_000 }), // 2 x (20 000 - 2 000 abattement)
+      expect.objectContaining({ value: 562 }), // décote couple, pas décote célibataire
+    ]);
+    expect(result.warnings).toBeUndefined();
+  });
+
+  it("has no 1BJ line and applies 2 parts to a single salary when the conjoint has none", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 45_000,
+        "conjoint-a-un-salaire": false,
+      },
+      2025,
+    );
+    expect(result.lines).toEqual([
+      expect.objectContaining({ code: "1AJ", value: 45_000 }),
+      expect.objectContaining({ value: 40_500 }),
+      expect.objectContaining({ value: 1_281 }),
+    ]);
+    expect(result.warnings).toBeUndefined();
+  });
+
+  it("does not cap the quotient familial benefit when the reduction stays under the ceiling", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 1,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 30_000,
+        "conjoint-a-un-salaire": true,
+        "fiche-paie-disponible-conjoint": true,
+        "salaire-net-imposable-2025-conjoint": 30_000,
+      },
+      2025,
+    );
+    const taxLine = result.lines.at(-1);
+    expect(taxLine).toEqual(expect.objectContaining({ value: 2_511 }));
+    expect(result.warnings).toBeUndefined();
+  });
+
+  it("caps the quotient familial benefit when the reduction exceeds the legal ceiling (high income)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 2,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 90_000,
+        "conjoint-a-un-salaire": true,
+        "fiche-paie-disponible-conjoint": true,
+        "salaire-net-imposable-2025-conjoint": 90_000,
+      },
+      2025,
+    );
+    expect(result.lines).toEqual([
+      expect.objectContaining({ code: "1AJ", value: 90_000 }),
+      expect.objectContaining({ code: "1BJ", value: 90_000 }),
+      expect.objectContaining({ value: 162_000 }),
+      expect.objectContaining({ value: 31_194 }),
+    ]);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings?.[0]).toMatch(/plafonn/i);
   });
 });

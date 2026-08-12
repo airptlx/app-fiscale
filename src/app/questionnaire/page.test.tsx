@@ -20,10 +20,11 @@ describe("QuestionnairePage", () => {
     const user = userEvent.setup();
     render(<QuestionnairePage />);
 
-    await screen.findByText(/Êtes-vous célibataire/i);
+    await screen.findByText(/Quelle est votre situation/i);
     expect(screen.getByRole("button", { name: "Précédent" })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: "Oui" }));
+    await user.click(screen.getByRole("radio", { name: /Célibataire/i }));
+    await user.click(screen.getByRole("button", { name: "Suivant" }));
 
     await screen.findByText(/fiche de paie de décembre 2025/i);
     expect(screen.getByRole("button", { name: "Précédent" })).toBeEnabled();
@@ -33,11 +34,12 @@ describe("QuestionnairePage", () => {
     const user = userEvent.setup();
     render(<QuestionnairePage />);
 
-    await user.click(await screen.findByRole("button", { name: "Oui" }));
+    await user.click(await screen.findByRole("radio", { name: /Célibataire/i }));
+    await user.click(screen.getByRole("button", { name: "Suivant" }));
     await screen.findByText(/fiche de paie de décembre 2025/i);
 
     await user.click(screen.getByRole("button", { name: "Précédent" }));
-    await screen.findByText(/Êtes-vous célibataire/i);
+    await screen.findByText(/Quelle est votre situation/i);
   });
 
   it("redirects to / when the disclaimer has not been acknowledged", async () => {

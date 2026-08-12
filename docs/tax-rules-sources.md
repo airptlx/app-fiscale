@@ -18,6 +18,9 @@ Chaque valeur/règle fiscale utilisée dans `src/lib/tax-rules/` doit avoir une 
 | Déduction forfaitaire 10% — plafond | 14 555 € | 2025 | https://bofip.impots.gouv.fr/bofip/10855-PGP.html/identifiant=BOI-BAREME-000035-20260217 | CGI art. 83, 3° ; BOI-BAREME-000035 §IV | 2026-08-12 | simulateur officiel, cf. `docs/updates/2025-verification-increment-2.md` |
 | Arrondi bases/impôt | à l'euro le plus proche, 0,50 arrondi au-dessus | toutes années | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051219510 | CGI art. 1657 | 2026-08-12 | — |
 | Case 1AJ = salaire net imposable (≠ brut, ≠ net à payer) | — | 2025 | https://www.impots.gouv.fr/particulier/salaires-et-assimiles | Notice 2042 | 2026-08-12 | — |
+| Décote, foyer imposition commune (couple) | 1 483 € − 45,25% × impôt brut, nul au-delà d'un impôt brut ≈3 277€ | 2025 | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 | CGI art. 197, I-4°-a | 2026-08-12 | BOFiP BOI-IR-LIQ-20-20-30 (id. 20260407) |
+| Plafonnement du quotient familial — plafond général par demi-part | 1 807 € | 2025 | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 | CGI art. 197, I-2 | 2026-08-12 | BOFiP BOI-IR-LIQ-20-20-20 (id. 20260407) |
+| Parts de quotient familial (cas général) | 1 part célibataire, 2 parts couple, +0,5 part/enfant (2 premiers), +1 part/enfant suivant | toutes années | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006307074 | CGI art. 194 | 2026-08-12 | — |
 
 Note : le ratio d'estimation brut → net imposable (80%, `src/lib/tax-rules/2025/estimation.ts`) n'apparaît **pas** dans cette table — ce n'est pas une règle fiscale sourcée officiellement, mais une heuristique documentée directement dans le fichier concerné.
 

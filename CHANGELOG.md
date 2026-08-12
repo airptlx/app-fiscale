@@ -9,6 +9,8 @@ et ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Ajouté
 
+- Situations familiales couple (marié·e/pacsé·e) avec ou sans enfants à charge, et second salaire du/de la conjoint·e (lignes 1AJ/1BJ) : quotient familial (parts fiscales, CGI art. 194), plafonnement général de son avantage fiscal (CGI art. 197, I-2) et décote spécifique aux foyers en imposition commune, toutes sourcées officiellement (`src/lib/tax-rules/2025/`, cf. `docs/tax-rules-sources.md`). Le célibataire avec enfant(s) à charge (« parent isolé ») reste explicitement non supporté pour l'instant (`UnsupportedSituationError`) — cf. `SPEC.md` § Scope du MVP et plan incrément 4.
+- Troisième option « autre situation » sur la question de situation conjugale (divorce, veuvage, union libre avec garde partagée...), pour ne pas mal classer un utilisateur dans un cas qui produirait un résultat inexact.
 - Premier parcours utilisateur complet et navigable : accueil (avertissement + consentement), questionnaire pas-à-pas, écran de résultat, page « À propos » avec effacement des données (`/`, `/questionnaire`, `/result`, `/a-propos`).
 - Persistance locale des réponses et du consentement (`localStorage`, jamais envoyé nulle part), avec reprise possible.
 - Gestion du cas « situation non prise en charge » directement dans le moteur (`UnsupportedSituationError`).
@@ -20,8 +22,14 @@ et ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 - Configuration des tests (Vitest, React Testing Library).
 - Documentation de départ : `README.md`, `SPEC.md`, `CLAUDE.md`, `docs/`.
 
+### Modifié
+
+- Clé de stockage local des réponses passée en `appfiscale.answers.2025.v2` : la première question du questionnaire change de nature (bouléen → choix multiple), un ancien état sauvegardé ne correspond plus à aucune question actuelle.
+
 ### Corrigé
 
+- `RadioGroup` (question à choix unique) passait de non contrôlé à contrôlé au premier clic (avertissement React/Base UI), latent depuis l'incrément 3 mais jamais déclenché faute de question `single-choice` avant `situation-conjugale` — `value` du groupe toujours défini dès le montage (`src/components/questionnaire/question-form.tsx`).
+- Texte statique de `/a-propos` toujours limité au cas célibataire (incrément 2/3), oublié lors de l'élargissement du moteur — mis à jour pour refléter le périmètre réellement supporté.
 - Suppression du composant `RegisterPWA` (enregistrement manuel du service worker), redondant avec l'enregistrement automatique déjà fait par `@serwist/next` (option `register`, vraie par défaut) — la double tentative provoquait une erreur console "Cannot re-register a Serwist instance", découverte pendant la vérification manuelle du parcours.
 
 ## [0.1.0] - 2026-08-12

@@ -36,3 +36,28 @@ export const DECOTE_CELIBATAIRE_2025 = {
  */
 export const ABATTEMENT_10_PLANCHER_2025 = 509;
 export const ABATTEMENT_10_PLAFOND_2025 = 14_555;
+
+/**
+ * Décote, foyer soumis à imposition commune (marié/pacsé), revenus 2025.
+ * décote = max(0, 1 483 − 0,4525 × impôt brut) ; ne peut jamais rendre l'impôt négatif.
+ * Base légale : CGI art. 197, I-4°-a.
+ * https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636
+ * Recoupé : bofip.impots.gouv.fr/bofip/2495-PGP.html/identifiant=BOI-IR-LIQ-20-20-30-20260407
+ * Récupéré le 2026-08-12.
+ */
+export const DECOTE_COUPLE_2025 = {
+  montantForfaitaire: 1_483,
+  taux: 0.4525,
+} as const;
+
+/**
+ * Plafonnement général des effets du quotient familial (cas standard, hors parent
+ * isolé/veuvage), revenus 2025 : l'avantage fiscal procuré par chaque demi-part
+ * au-delà du nombre de parts de référence (1 pour une personne seule, 2 pour un
+ * couple) ne peut pas dépasser ce montant par demi-part.
+ * Base légale : CGI art. 197, I-2.
+ * https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636
+ * Recoupé : bofip.impots.gouv.fr/bofip/2494-PGP.html/identifiant=BOI-IR-LIQ-20-20-20-20260407
+ * Récupéré le 2026-08-12.
+ */
+export const PLAFOND_QUOTIENT_FAMILIAL_DEMI_PART_2025 = 1_807;

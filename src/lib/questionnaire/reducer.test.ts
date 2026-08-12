@@ -16,11 +16,11 @@ describe("questionnaireReducer", () => {
       questions: Q,
       answers: {},
     });
-    expect(state.currentQuestionId).toBe("situation-familiale-simple");
+    expect(state.currentQuestionId).toBe("situation-conjugale");
   });
 
   it("HYDRATE with partial saved answers resumes on the first unanswered question", () => {
-    const savedAnswers: Answers = { "situation-familiale-simple": true };
+    const savedAnswers: Answers = { "situation-conjugale": "celibataire" };
     const state = questionnaireReducer(initialQuestionnaireState, {
       type: "HYDRATE",
       questions: Q,
@@ -31,7 +31,7 @@ describe("questionnaireReducer", () => {
   });
 
   it("HYDRATE with a complete answer set has no current question", () => {
-    const savedAnswers: Answers = { "situation-familiale-simple": false };
+    const savedAnswers: Answers = { "situation-conjugale": "autre" };
     const state = questionnaireReducer(initialQuestionnaireState, {
       type: "HYDRATE",
       questions: Q,
@@ -44,17 +44,27 @@ describe("questionnaireReducer", () => {
     const state = questionnaireReducer(initialQuestionnaireState, {
       type: "ANSWER",
       questions: Q,
-      questionId: "situation-familiale-simple",
-      value: true,
+      questionId: "situation-conjugale",
+      value: "celibataire",
     });
     expect(state.currentQuestionId).toBe("fiche-paie-disponible");
-    expect(state.answers).toEqual({ "situation-familiale-simple": true });
+    expect(state.answers).toEqual({ "situation-conjugale": "celibataire" });
+  });
+
+  it("ANSWER advances to nombre-enfants-a-charge for a couple", () => {
+    const state = questionnaireReducer(initialQuestionnaireState, {
+      type: "ANSWER",
+      questions: Q,
+      questionId: "situation-conjugale",
+      value: "couple",
+    });
+    expect(state.currentQuestionId).toBe("nombre-enfants-a-charge");
   });
 
   it("ANSWER applies the cascade-clear when changing an earlier answer", () => {
     let state: QuestionnaireState = {
       answers: {
-        "situation-familiale-simple": true,
+        "situation-conjugale": "celibataire",
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 28_000,
       },
@@ -63,25 +73,25 @@ describe("questionnaireReducer", () => {
     state = questionnaireReducer(state, {
       type: "ANSWER",
       questions: Q,
-      questionId: "situation-familiale-simple",
-      value: false,
+      questionId: "situation-conjugale",
+      value: "autre",
     });
-    expect(state.answers).toEqual({ "situation-familiale-simple": false });
+    expect(state.answers).toEqual({ "situation-conjugale": "autre" });
     expect(state.currentQuestionId).toBeUndefined();
   });
 
   it("BACK moves to the previous visible question", () => {
     const state = questionnaireReducer(
-      { answers: { "situation-familiale-simple": true }, currentQuestionId: "fiche-paie-disponible" },
+      { answers: { "situation-conjugale": "celibataire" }, currentQuestionId: "fiche-paie-disponible" },
       { type: "BACK", questions: Q },
     );
-    expect(state.currentQuestionId).toBe("situation-familiale-simple");
+    expect(state.currentQuestionId).toBe("situation-conjugale");
   });
 
   it("BACK no-ops on the first question", () => {
     const initial: QuestionnaireState = {
       answers: {},
-      currentQuestionId: "situation-familiale-simple",
+      currentQuestionId: "situation-conjugale",
     };
     const state = questionnaireReducer(initial, { type: "BACK", questions: Q });
     expect(state).toBe(initial);
@@ -89,7 +99,7 @@ describe("questionnaireReducer", () => {
 
   it("BACK no-ops when currentQuestionId is undefined", () => {
     const initial: QuestionnaireState = {
-      answers: { "situation-familiale-simple": false },
+      answers: { "situation-conjugale": "autre" },
       currentQuestionId: undefined,
     };
     const state = questionnaireReducer(initial, { type: "BACK", questions: Q });
@@ -98,7 +108,7 @@ describe("questionnaireReducer", () => {
 
   it("RESET returns the initial state", () => {
     const state = questionnaireReducer(
-      { answers: { "situation-familiale-simple": true }, currentQuestionId: "fiche-paie-disponible" },
+      { answers: { "situation-conjugale": "celibataire" }, currentQuestionId: "fiche-paie-disponible" },
       { type: "RESET" },
     );
     expect(state).toEqual(initialQuestionnaireState);

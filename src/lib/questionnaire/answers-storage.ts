@@ -2,7 +2,7 @@ import { CURRENT_TAX_YEAR } from "../tax-rules/registry";
 import type { Answers } from "../tax-rules/types";
 import { readJSON, removeItem, writeJSON } from "../storage/safe-json-storage";
 
-export const ANSWERS_STORAGE_KEY = `appfiscale.answers.${CURRENT_TAX_YEAR}.v1`;
+export const ANSWERS_STORAGE_KEY = `appfiscale.answers.${CURRENT_TAX_YEAR}.v2`;
 
 export function loadAnswers(): Answers {
   return readJSON<Answers>(ANSWERS_STORAGE_KEY, {});

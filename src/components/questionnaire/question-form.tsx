@@ -102,7 +102,7 @@ function SingleChoiceAnswer({
         if (draft !== undefined) onSubmit(draft);
       }}
     >
-      <RadioGroup aria-labelledby={headingId} value={draft} onValueChange={setDraft}>
+      <RadioGroup aria-labelledby={headingId} value={draft ?? ""} onValueChange={setDraft}>
         {question.options?.map((option) => (
           <div key={option.value} className="flex items-center gap-2">
             <RadioGroupItem value={option.value} id={`${question.id}-${option.value}`} />

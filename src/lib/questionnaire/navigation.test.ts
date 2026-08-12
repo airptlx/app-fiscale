@@ -15,24 +15,43 @@ const ids = (list: { id: string }[]) => list.map((q) => q.id);
 
 describe("getVisibleQuestions", () => {
   it("shows only the first question when nothing is answered", () => {
-    expect(ids(getVisibleQuestions(Q, {}))).toEqual(["situation-familiale-simple"]);
+    expect(ids(getVisibleQuestions(Q, {}))).toEqual(["situation-conjugale"]);
   });
 
-  it("reveals fiche-paie-disponible once célibataire is confirmed", () => {
-    const answers: Answers = { "situation-familiale-simple": true };
+  it("stays a dead end when situation-conjugale is 'autre'", () => {
+    expect(ids(getVisibleQuestions(Q, { "situation-conjugale": "autre" }))).toEqual([
+      "situation-conjugale",
+    ]);
+  });
+
+  it("reveals fiche-paie-disponible directly for a célibataire (no children question)", () => {
+    const answers: Answers = { "situation-conjugale": "celibataire" };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
-      "situation-familiale-simple",
+      "situation-conjugale",
       "fiche-paie-disponible",
+    ]);
+  });
+
+  it("reveals nombre-enfants-a-charge, fiche-paie-disponible and conjoint-a-un-salaire for a couple", () => {
+    // conjoint-a-un-salaire ne dépend que de situation-conjugale (pas de la
+    // réponse au salaire "vous") : il est donc visible dès ce stade, même s'il
+    // n'est atteint qu'après dans l'ordre du tableau (cf. getNextQuestion).
+    const answers: Answers = { "situation-conjugale": "couple" };
+    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
+      "situation-conjugale",
+      "nombre-enfants-a-charge",
+      "fiche-paie-disponible",
+      "conjoint-a-un-salaire",
     ]);
   });
 
   it("reveals the net-imposable question when the payslip is available", () => {
     const answers: Answers = {
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": true,
     };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
-      "situation-familiale-simple",
+      "situation-conjugale",
       "fiche-paie-disponible",
       "salaire-net-imposable-2025",
     ]);
@@ -40,35 +59,82 @@ describe("getVisibleQuestions", () => {
 
   it("reveals the brut question instead when the payslip is not available", () => {
     const answers: Answers = {
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": false,
     };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
-      "situation-familiale-simple",
+      "situation-conjugale",
       "fiche-paie-disponible",
       "salaire-brut-annuel-2025",
     ]);
   });
 
-  it("stays a dead end when célibataire is false", () => {
-    expect(ids(getVisibleQuestions(Q, { "situation-familiale-simple": false }))).toEqual([
-      "situation-familiale-simple",
+  it("reveals conjoint-a-un-salaire once the couple's own salary question is answered", () => {
+    const answers: Answers = {
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 30_000,
+    };
+    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
+      "situation-conjugale",
+      "nombre-enfants-a-charge",
+      "fiche-paie-disponible",
+      "salaire-net-imposable-2025",
+      "conjoint-a-un-salaire",
+    ]);
+  });
+
+  it("is complete without conjoint salary questions when the conjoint has no salary", () => {
+    const answers: Answers = {
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 30_000,
+      "conjoint-a-un-salaire": false,
+    };
+    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
+      "situation-conjugale",
+      "nombre-enfants-a-charge",
+      "fiche-paie-disponible",
+      "salaire-net-imposable-2025",
+      "conjoint-a-un-salaire",
+    ]);
+  });
+
+  it("walks the full conjoint branch (fiche-paie-disponible-conjoint then net-imposable-conjoint)", () => {
+    const answers: Answers = {
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 30_000,
+      "conjoint-a-un-salaire": true,
+      "fiche-paie-disponible-conjoint": true,
+    };
+    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
+      "situation-conjugale",
+      "nombre-enfants-a-charge",
+      "fiche-paie-disponible",
+      "salaire-net-imposable-2025",
+      "conjoint-a-un-salaire",
+      "fiche-paie-disponible-conjoint",
+      "salaire-net-imposable-2025-conjoint",
     ]);
   });
 });
 
 describe("getNextQuestion", () => {
   it("starts at the first question", () => {
-    expect(getNextQuestion(Q, {})?.id).toBe("situation-familiale-simple");
+    expect(getNextQuestion(Q, {})?.id).toBe("situation-conjugale");
   });
 
-  it("is undefined at the dead end (célibataire: false)", () => {
-    expect(getNextQuestion(Q, { "situation-familiale-simple": false })).toBeUndefined();
+  it("is undefined at the dead end (situation-conjugale: autre)", () => {
+    expect(getNextQuestion(Q, { "situation-conjugale": "autre" })).toBeUndefined();
   });
 
-  it("walks the exact-path branch to completion", () => {
+  it("walks the célibataire exact-path branch to completion", () => {
     let answers: Answers = {};
-    answers = answerQuestion(Q, answers, "situation-familiale-simple", true);
+    answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
     expect(getNextQuestion(Q, answers)?.id).toBe("fiche-paie-disponible");
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("salaire-net-imposable-2025");
@@ -76,36 +142,69 @@ describe("getNextQuestion", () => {
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
-  it("walks the estimation branch to completion", () => {
+  it("walks the célibataire estimation branch to completion", () => {
     let answers: Answers = {};
-    answers = answerQuestion(Q, answers, "situation-familiale-simple", true);
+    answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", false);
     expect(getNextQuestion(Q, answers)?.id).toBe("salaire-brut-annuel-2025");
     answers = answerQuestion(Q, answers, "salaire-brut-annuel-2025", 35_000);
+    expect(getNextQuestion(Q, answers)).toBeUndefined();
+  });
+
+  it("walks the couple branch to completion when the conjoint has no salary", () => {
+    let answers: Answers = {};
+    answers = answerQuestion(Q, answers, "situation-conjugale", "couple");
+    expect(getNextQuestion(Q, answers)?.id).toBe("nombre-enfants-a-charge");
+    answers = answerQuestion(Q, answers, "nombre-enfants-a-charge", 2);
+    answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
+    answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 30_000);
+    expect(getNextQuestion(Q, answers)?.id).toBe("conjoint-a-un-salaire");
+    answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", false);
+    expect(getNextQuestion(Q, answers)).toBeUndefined();
+  });
+
+  it("walks the couple branch to completion when the conjoint has a salary", () => {
+    let answers: Answers = {};
+    answers = answerQuestion(Q, answers, "situation-conjugale", "couple");
+    answers = answerQuestion(Q, answers, "nombre-enfants-a-charge", 0);
+    answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
+    answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 30_000);
+    answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", true);
+    expect(getNextQuestion(Q, answers)?.id).toBe("fiche-paie-disponible-conjoint");
+    answers = answerQuestion(Q, answers, "fiche-paie-disponible-conjoint", false);
+    expect(getNextQuestion(Q, answers)?.id).toBe("salaire-brut-annuel-2025-conjoint");
+    answers = answerQuestion(Q, answers, "salaire-brut-annuel-2025-conjoint", 40_000);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 });
 
 describe("getPreviousQuestion", () => {
   it("is undefined from the first question", () => {
-    expect(getPreviousQuestion(Q, {}, "situation-familiale-simple")).toBeUndefined();
+    expect(getPreviousQuestion(Q, {}, "situation-conjugale")).toBeUndefined();
   });
 
-  it("returns the first question from the second", () => {
-    const answers: Answers = { "situation-familiale-simple": true };
+  it("returns the first question from the second, on the célibataire branch", () => {
+    const answers: Answers = { "situation-conjugale": "celibataire" };
     expect(getPreviousQuestion(Q, answers, "fiche-paie-disponible")?.id).toBe(
-      "situation-familiale-simple",
+      "situation-conjugale",
     );
   });
 
-  it("returns the second question from a third-level question on either branch", () => {
-    const exact: Answers = { "situation-familiale-simple": true, "fiche-paie-disponible": true };
+  it("returns nombre-enfants-a-charge from fiche-paie-disponible, on the couple branch", () => {
+    const answers: Answers = { "situation-conjugale": "couple" };
+    expect(getPreviousQuestion(Q, answers, "fiche-paie-disponible")?.id).toBe(
+      "nombre-enfants-a-charge",
+    );
+  });
+
+  it("returns the salary question from either salary branch", () => {
+    const exact: Answers = { "situation-conjugale": "celibataire", "fiche-paie-disponible": true };
     expect(getPreviousQuestion(Q, exact, "salaire-net-imposable-2025")?.id).toBe(
       "fiche-paie-disponible",
     );
 
     const estimate: Answers = {
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": false,
     };
     expect(getPreviousQuestion(Q, estimate, "salaire-brut-annuel-2025")?.id).toBe(
@@ -115,25 +214,53 @@ describe("getPreviousQuestion", () => {
 });
 
 describe("answerQuestion (cascade clear)", () => {
-  it("clears fiche-paie-disponible and the salary answer when situation-familiale-simple flips to false", () => {
+  it("clears all downstream answers when situation-conjugale flips to célibataire", () => {
     let answers: Answers = {
-      "situation-familiale-simple": true,
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 2,
       "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
+      "salaire-net-imposable-2025": 30_000,
+      "conjoint-a-un-salaire": true,
+      "fiche-paie-disponible-conjoint": true,
+      "salaire-net-imposable-2025-conjoint": 30_000,
     };
-    answers = answerQuestion(Q, answers, "situation-familiale-simple", false);
-    expect(answers).toEqual({ "situation-familiale-simple": false });
+    answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
+    expect(answers).toEqual({
+      "situation-conjugale": "celibataire",
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 30_000,
+    });
+  });
+
+  it("clears conjoint salary answers when conjoint-a-un-salaire flips to false", () => {
+    let answers: Answers = {
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 30_000,
+      "conjoint-a-un-salaire": true,
+      "fiche-paie-disponible-conjoint": true,
+      "salaire-net-imposable-2025-conjoint": 30_000,
+    };
+    answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", false);
+    expect(answers).toEqual({
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 30_000,
+      "conjoint-a-un-salaire": false,
+    });
   });
 
   it("clears the net-imposable answer when fiche-paie-disponible flips to false", () => {
     let answers: Answers = {
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
     };
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", false);
     expect(answers).toEqual({
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": false,
     });
   });
@@ -145,18 +272,29 @@ describe("isQuestionnaireComplete", () => {
   });
 
   it("is false partway through", () => {
-    expect(isQuestionnaireComplete(Q, { "situation-familiale-simple": true })).toBe(false);
+    expect(isQuestionnaireComplete(Q, { "situation-conjugale": "celibataire" })).toBe(false);
   });
 
   it("is true at the dead end", () => {
-    expect(isQuestionnaireComplete(Q, { "situation-familiale-simple": false })).toBe(true);
+    expect(isQuestionnaireComplete(Q, { "situation-conjugale": "autre" })).toBe(true);
   });
 
-  it("is true once the exact-path branch is fully answered", () => {
+  it("is true once the célibataire exact-path branch is fully answered", () => {
     const answers: Answers = {
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
+    };
+    expect(isQuestionnaireComplete(Q, answers)).toBe(true);
+  });
+
+  it("is true once the couple branch (no conjoint salary) is fully answered", () => {
+    const answers: Answers = {
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 1,
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 28_000,
+      "conjoint-a-un-salaire": false,
     };
     expect(isQuestionnaireComplete(Q, answers)).toBe(true);
   });
@@ -164,17 +302,19 @@ describe("isQuestionnaireComplete", () => {
 
 describe("getProgress", () => {
   it("reports 1 of 1 on the first question", () => {
-    expect(getProgress(Q, {}, "situation-familiale-simple")).toEqual({ position: 1, total: 1 });
+    expect(getProgress(Q, {}, "situation-conjugale")).toEqual({ position: 1, total: 1 });
   });
 
-  it("reports 2 of 2 on the second question", () => {
-    const answers: Answers = { "situation-familiale-simple": true };
-    expect(getProgress(Q, answers, "fiche-paie-disponible")).toEqual({ position: 2, total: 2 });
+  it("reports 2 of 4 on nombre-enfants-a-charge for a couple", () => {
+    // total = 4 dès ce stade : conjoint-a-un-salaire est déjà visible (ne dépend
+    // que de situation-conjugale), même si l'utilisateur ne l'atteint qu'après.
+    const answers: Answers = { "situation-conjugale": "couple" };
+    expect(getProgress(Q, answers, "nombre-enfants-a-charge")).toEqual({ position: 2, total: 4 });
   });
 
   it("reports position = total when complete (currentQuestionId undefined)", () => {
     const answers: Answers = {
-      "situation-familiale-simple": true,
+      "situation-conjugale": "celibataire",
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
     };
