@@ -29,6 +29,15 @@ src/lib/tax-rules/
 
 Chaque constante est commentée avec sa source (impots.gouv.fr / BOFiP) et sa date de récupération — voir `docs/tax-rules-sources.md`.
 
+## Routes
+
+- **`/`** : pitch, avertissement légal complet, consentement obligatoire (case à cocher) avant d'accéder au questionnaire.
+- **`/questionnaire`** : une question à la fois (`src/components/questionnaire/question-form.tsx`), état géré par `src/lib/questionnaire/reducer.ts` + persisté en `localStorage` (`src/lib/questionnaire/answers-storage.ts`) pour transiter vers `/result` sans backend ni paramètres d'URL.
+- **`/result`** : résultat (`computeDeclaration`) ou message "situation non prise en charge" (`UnsupportedSituationError`, cf. `src/lib/tax-rules/errors.ts`).
+- **`/a-propos`** : avertissement légal complet + effacement manuel des données locales.
+
+Le consentement à l'avertissement (`src/lib/disclaimer/storage.ts`) est stocké séparément des réponses : cycle de vie différent (consentement légal, non effacé par "Recommencer").
+
 ## PWA
 
 - Manifest natif Next.js : `src/app/manifest.ts`.

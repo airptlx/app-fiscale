@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { UnsupportedSituationError } from "../errors";
 import { computeDeclaration, computeProgressiveTax, computeTaxableIncome } from "./compute";
 import { estimateNetImposableFromBrut } from "./estimation";
 
@@ -76,5 +77,27 @@ describe("computeDeclaration (2025, single filer / one salary / 10% abattement)"
 
   it("rejects an unsupported tax year", () => {
     expect(() => computeDeclaration({}, 2024)).toThrow();
+  });
+
+  it("rejects a year even when situation-familiale-simple would also be unsupported (year check runs first)", () => {
+    expect(() => computeDeclaration({ "situation-familiale-simple": false }, 2024)).not.toThrow(
+      UnsupportedSituationError,
+    );
+  });
+
+  it("throws UnsupportedSituationError when situation-familiale-simple is false", () => {
+    expect(() => computeDeclaration({ "situation-familiale-simple": false }, 2025)).toThrow(
+      UnsupportedSituationError,
+    );
+  });
+
+  it("throws UnsupportedSituationError with a plain-language message for an empty (dead-end) answer set", () => {
+    expect(() => computeDeclaration({}, 2025)).toThrow(UnsupportedSituationError);
+    try {
+      computeDeclaration({}, 2025);
+    } catch (e) {
+      expect(e).toBeInstanceOf(UnsupportedSituationError);
+      expect((e as Error).message.length).toBeGreaterThan(0);
+    }
   });
 });

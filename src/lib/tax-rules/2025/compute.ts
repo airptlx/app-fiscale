@@ -1,3 +1,4 @@
+import { UnsupportedSituationError } from "../errors";
 import type { Answers, DeclarationResult } from "../types";
 import {
   ABATTEMENT_10_PLAFOND_2025,
@@ -62,6 +63,9 @@ export function resolveNetImposable(answers: Answers): {
 export function computeDeclaration(answers: Answers, year: number): DeclarationResult {
   if (year !== 2025) {
     throw new Error(`Année fiscale non supportée par ce module : ${year}`);
+  }
+  if (answers["situation-familiale-simple"] !== true) {
+    throw new UnsupportedSituationError();
   }
 
   const { netImposable, isEstimate } = resolveNetImposable(answers);

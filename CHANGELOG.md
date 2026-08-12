@@ -9,6 +9,10 @@ et ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Ajouté
 
+- Premier parcours utilisateur complet et navigable : accueil (avertissement + consentement), questionnaire pas-à-pas, écran de résultat, page « À propos » avec effacement des données (`/`, `/questionnaire`, `/result`, `/a-propos`).
+- Persistance locale des réponses et du consentement (`localStorage`, jamais envoyé nulle part), avec reprise possible.
+- Gestion du cas « situation non prise en charge » directement dans le moteur (`UnsupportedSituationError`).
+- Accessibilité clavier/lecteur d'écran sur le questionnaire (focus géré, ARIA, soumission explicite).
 - Moteur de règles fiscales pour le cas célibataire / un salaire / abattement 10% (revenus 2025) : barème progressif, décote, abattement forfaitaire, tous sourcés officiellement (`src/lib/tax-rules/2025/`, cf. `docs/tax-rules-sources.md`).
 - Double chemin de saisie du salaire : net imposable exact (fiche de paie) ou brut annuel avec estimation heuristique (`src/lib/tax-rules/2025/estimation.ts`), pour anticiper une actualisation de taux de PAS avant réception de la fiche de paie de décembre.
 - Scaffold initial du projet : Next.js 16 (App Router, TypeScript), Tailwind CSS v4, shadcn/ui.
