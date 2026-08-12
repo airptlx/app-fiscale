@@ -115,6 +115,17 @@ export function resolveNetImposable(
   };
 }
 
+/**
+ * BOI-RSA-BASE-30-50-20 : les allocations chômage (France Travail) sont soumises
+ * aux mêmes règles que les traitements et salaires — même abattement de 10%, dans
+ * le même pool que le salaire du déclarant (cf. computeTaxableIncome), pas un
+ * abattement séparé. `suffix` distingue "vous" ("") du conjoint ("-conjoint").
+ */
+export function resolveChomage(answers: Answers, suffix: "" | "-conjoint" = ""): number {
+  if (answers[`chomage${suffix}`] !== true) return 0;
+  return Number(answers[`montant-chomage-2025${suffix}`] ?? 0);
+}
+
 function formatParts(parts: number): string {
   return String(parts).replace(".", ",");
 }
@@ -136,8 +147,16 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     ? resolveNetImposable(answers, "-conjoint")
     : { netImposable: 0, isEstimate: false };
 
-  const taxableIncomeVous = computeTaxableIncome(vous.netImposable);
-  const taxableIncomeConjoint = conjointASalaire ? computeTaxableIncome(conjoint.netImposable) : 0;
+  const chomageDeclare = answers["chomage"] === true;
+  const chomageVous = resolveChomage(answers, "");
+  const chomageConjointDeclare = isCouple && answers["chomage-conjoint"] === true;
+  const chomageConjoint = chomageConjointDeclare ? resolveChomage(answers, "-conjoint") : 0;
+  const conjointADesRevenus = conjointASalaire || chomageConjointDeclare;
+
+  const taxableIncomeVous = computeTaxableIncome(vous.netImposable + chomageVous);
+  const taxableIncomeConjoint = conjointADesRevenus
+    ? computeTaxableIncome(conjoint.netImposable + chomageConjoint)
+    : 0;
   const taxableIncome = taxableIncomeVous + taxableIncomeConjoint;
 
   const parts = computeParts(answers);
@@ -158,6 +177,17 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     },
   ];
 
+  if (chomageDeclare) {
+    lines.push({
+      code: "1AP",
+      label: "Allocations chômage à déclarer (vous)",
+      value: chomageVous,
+      explanation:
+        "C'est le montant imposable indiqué sur votre attestation fiscale annuelle de France Travail, à reporter dans la case 1AP.",
+      source: "impots.gouv.fr — Autres revenus imposables ; BOFiP BOI-RSA-BASE-30-50-20",
+    });
+  }
+
   if (conjointASalaire) {
     lines.push({
       code: conjoint.isEstimate ? undefined : "1BJ",
@@ -172,13 +202,24 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     });
   }
 
+  if (chomageConjointDeclare) {
+    lines.push({
+      code: "1BP",
+      label: "Allocations chômage à déclarer (conjoint·e)",
+      value: chomageConjoint,
+      explanation:
+        "C'est le montant imposable indiqué sur l'attestation fiscale annuelle de France Travail de votre conjoint·e, à reporter dans la case 1BP.",
+      source: "impots.gouv.fr — Autres revenus imposables ; BOFiP BOI-RSA-BASE-30-50-20",
+    });
+  }
+
   lines.push(
     {
       label: "Revenu imposable retenu pour le foyer, après abattement de 10% pour frais professionnels",
       value: taxableIncome,
       explanation:
-        "L'administration applique automatiquement un abattement de 10% sur le salaire net imposable de chaque déclarant (au moins 509€, au plus 14 555€ chacun pour les revenus 2025), pour couvrir forfaitairement ses frais professionnels courants.",
-      source: "CGI art. 83, 3° ; BOFiP BOI-BAREME-000035",
+        "L'administration applique automatiquement un abattement de 10% sur l'ensemble des sommes touchées par chaque déclarant au titre du salaire et, le cas échéant, des allocations chômage (au moins 509€, au plus 14 555€ chacun pour les revenus 2025), pour couvrir forfaitairement ses frais professionnels courants.",
+      source: "CGI art. 83, 3° ; BOFiP BOI-BAREME-000035, BOI-RSA-BASE-30-50-20",
     },
     {
       label: "Impôt sur le revenu (avant réductions et crédits d'impôt éventuels)",

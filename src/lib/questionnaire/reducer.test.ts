@@ -30,6 +30,20 @@ describe("questionnaireReducer", () => {
     expect(state.answers).toEqual(savedAnswers);
   });
 
+  it("HYDRATE resumes on chomage once the salary sub-flow is answered", () => {
+    const savedAnswers: Answers = {
+      "situation-conjugale": "celibataire",
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 28_000,
+    };
+    const state = questionnaireReducer(initialQuestionnaireState, {
+      type: "HYDRATE",
+      questions: Q,
+      answers: savedAnswers,
+    });
+    expect(state.currentQuestionId).toBe("chomage");
+  });
+
   it("HYDRATE with a complete answer set has no current question", () => {
     const savedAnswers: Answers = { "situation-conjugale": "autre" };
     const state = questionnaireReducer(initialQuestionnaireState, {

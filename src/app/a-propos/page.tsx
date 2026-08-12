@@ -28,11 +28,11 @@ export default function AProposPage() {
         </p>
         <p>
           Sont actuellement prises en charge : une personne célibataire sans personne à charge, ou
-          un couple marié/pacsé avec ou sans enfants à charge, avec un ou deux salaires (abattement
-          forfaitaire de 10% chacun). Les situations de parent isolé, divorce, veuvage ou union
-          libre avec garde partagée, ainsi que les autres types de revenus (chômage, retraite,
-          revenus fonciers, indépendants), ne sont pas encore pris en charge. D&apos;autres
-          situations seront ajoutées progressivement.
+          un couple marié/pacsé avec ou sans enfants à charge, avec un ou deux salaires et,
+          éventuellement, des allocations chômage (France Travail). Les situations de parent isolé,
+          divorce, veuvage ou union libre avec garde partagée, ainsi que les autres types de revenus
+          (retraite, revenus fonciers, indépendants), ne sont pas encore pris en charge.
+          D&apos;autres situations seront ajoutées progressivement.
         </p>
         <p>
           <strong>Confidentialité :</strong> cette application fonctionne entièrement dans votre

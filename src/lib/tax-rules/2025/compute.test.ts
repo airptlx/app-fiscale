@@ -5,6 +5,7 @@ import {
   computeParts,
   computeProgressiveTax,
   computeTaxableIncome,
+  resolveChomage,
 } from "./compute";
 import { estimateNetImposableFromBrut } from "./estimation";
 
@@ -233,5 +234,94 @@ describe("computeDeclaration (2025, couple, second salary, quotient familial)", 
     ]);
     expect(result.warnings).toHaveLength(1);
     expect(result.warnings?.[0]).toMatch(/plafonn/i);
+  });
+});
+
+describe("resolveChomage", () => {
+  it("is 0 when chomage is not declared", () => {
+    expect(resolveChomage({})).toBe(0);
+    expect(resolveChomage({ chomage: false, "montant-chomage-2025": 5_000 })).toBe(0);
+  });
+  it("reads the declared amount when chomage is true", () => {
+    expect(resolveChomage({ chomage: true, "montant-chomage-2025": 5_000 })).toBe(5_000);
+  });
+  it("supports the conjoint suffix independently", () => {
+    expect(
+      resolveChomage(
+        { "chomage-conjoint": true, "montant-chomage-2025-conjoint": 8_000 },
+        "-conjoint",
+      ),
+    ).toBe(8_000);
+  });
+});
+
+describe("computeDeclaration (2025, allocations chômage — case 1AP/1BP)", () => {
+  it("pools salary and chômage under a single abattement (1AJ + 1AP, célibataire)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        chomage: true,
+        "montant-chomage-2025": 5_000,
+      },
+      2025,
+    );
+    expect(result.lines).toEqual([
+      expect.objectContaining({ code: "1AJ", value: 20_000 }),
+      expect.objectContaining({ code: "1AP", value: 5_000 }),
+      expect.objectContaining({ value: 22_500 }), // (20 000 + 5 000) - 2 500 abattement
+      expect.objectContaining({}),
+    ]);
+  });
+
+  it("has no 1AJ/1BJ line for a celibataire with chômage only (no salary)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 0,
+        chomage: true,
+        "montant-chomage-2025": 12_000,
+      },
+      2025,
+    );
+    expect(result.lines[0]).toEqual(expect.objectContaining({ code: "1AJ", value: 0 }));
+    expect(result.lines[1]).toEqual(expect.objectContaining({ code: "1AP", value: 12_000 }));
+  });
+
+  it("adds a 1BP line without a 1BJ line when the conjoint has chômage but no salary", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 0,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "conjoint-a-un-salaire": false,
+        "chomage-conjoint": true,
+        "montant-chomage-2025-conjoint": 8_000,
+      },
+      2025,
+    );
+    const codes = result.lines.map((l) => l.code);
+    expect(codes).not.toContain("1BJ");
+    expect(codes).toContain("1BP");
+    const bpLine = result.lines.find((l) => l.code === "1BP");
+    expect(bpLine).toEqual(expect.objectContaining({ value: 8_000 }));
+    // Le conjoint (8 000 - 800 abattement = 7 200) doit contribuer au revenu imposable total.
+    const taxableIncomeLine = result.lines.find((l) => l.code === undefined && l.value !== bpLine?.value);
+    expect(taxableIncomeLine?.value).toBeGreaterThan(computeTaxableIncome(20_000));
+  });
+
+  it("does not add 1AP/1BP lines when chômage is not declared (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.lines.map((l) => l.code)).toEqual(["1AJ", undefined, undefined]);
   });
 });

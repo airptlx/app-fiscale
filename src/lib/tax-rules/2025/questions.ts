@@ -69,6 +69,29 @@ export const QUESTIONS_2025: Question[] = [
         : "Merci d'indiquer un montant positif ou nul.",
   },
   {
+    id: "chomage",
+    type: "boolean",
+    prompt: "Avez-vous aussi perçu des allocations chômage (France Travail) en 2025 ?",
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "celibataire" ||
+      answers["situation-conjugale"] === "couple",
+  },
+  {
+    id: "montant-chomage-2025",
+    type: "number",
+    prompt: "Quel est le montant imposable de vos allocations chômage perçues en 2025 ?",
+    helpText:
+      "Ce montant figure sur votre attestation fiscale annuelle, envoyée par France Travail (ex Pôle emploi) en début d'année suivante. Ce n'est pas le total versé sur votre compte : l'attestation indique déjà la part imposable.",
+    isVisible: (answers) =>
+      (answers["situation-conjugale"] === "celibataire" ||
+        answers["situation-conjugale"] === "couple") &&
+      answers["chomage"] === true,
+    validate: (value) =>
+      typeof value === "number" && value >= 0
+        ? undefined
+        : "Merci d'indiquer un montant positif ou nul.",
+  },
+  {
     id: "conjoint-a-un-salaire",
     type: "boolean",
     prompt: "Votre conjoint·e a-t-il/elle également un salaire à déclarer ?",
@@ -108,6 +131,25 @@ export const QUESTIONS_2025: Question[] = [
       answers["situation-conjugale"] === "couple" &&
       answers["conjoint-a-un-salaire"] === true &&
       answers["fiche-paie-disponible-conjoint"] === false,
+    validate: (value) =>
+      typeof value === "number" && value >= 0
+        ? undefined
+        : "Merci d'indiquer un montant positif ou nul.",
+  },
+  {
+    id: "chomage-conjoint",
+    type: "boolean",
+    prompt: "Votre conjoint·e a-t-il/elle aussi perçu des allocations chômage en 2025 ?",
+    isVisible: (answers) => answers["situation-conjugale"] === "couple",
+  },
+  {
+    id: "montant-chomage-2025-conjoint",
+    type: "number",
+    prompt: "Quel est le montant imposable des allocations chômage perçues par votre conjoint·e en 2025 ?",
+    helpText:
+      "Ce montant figure sur son attestation fiscale annuelle, envoyée par France Travail (ex Pôle emploi) en début d'année suivante. Ce n'est pas le total versé sur son compte : l'attestation indique déjà la part imposable.",
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "couple" && answers["chomage-conjoint"] === true,
     validate: (value) =>
       typeof value === "number" && value >= 0
         ? undefined

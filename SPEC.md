@@ -24,6 +24,7 @@ Exemple : au lieu de "Optez-vous pour l'abattement forfaitaire de 10% ou les fra
 
 **Inclus :**
 - Traitements et salaires, un ou deux revenus (couple), lignes 1AJ/1BJ.
+- Allocations chômage (France Travail), un ou deux déclarants, lignes 1AP/1BP — soumises au même abattement de 10% que le salaire, dans le même pool par déclarant (BOI-RSA-BASE-30-50-20).
 - Frais professionnels : abattement 10% vs frais réels (question simple, calcul automatique du régime le plus avantageux).
 - Situation familiale : célibataire sans enfant, ou marié/pacsé avec ou sans enfants (quotient familial, plafonnement général, décote spécifique couple). Le régime « parent isolé » (célibataire avec enfant(s) à charge, demi-part majorée) est nuancé ci-dessous, en roadmap plutôt qu'en inclus direct.
 - Taux de prélèvement à la source (PAS) : individualisé, personnalisé, neutre — explication du choix et grille de taux neutre.
@@ -31,7 +32,6 @@ Exemple : au lieu de "Optez-vous pour l'abattement forfaitaire de 10% ou les fra
 - Écran de résultat : liste des lignes à remplir + explications + avertissement.
 
 **Roadmap « revenus annexes » (planifiée, incréments dédiés — voir plan incrément 4)** — chacun de ces points nécessite son propre cycle Plan Mode avant implémentation, distinct du cas traitements et salaires :
-- Allocations chômage (case 1AP).
 - Pensions de retraite (case 1AS).
 - Revenus fonciers (micro-foncier vs réel).
 - Revenus indépendants (micro-BIC/micro-BNC).

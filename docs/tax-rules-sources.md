@@ -21,6 +21,8 @@ Chaque valeur/règle fiscale utilisée dans `src/lib/tax-rules/` doit avoir une 
 | Décote, foyer imposition commune (couple) | 1 483 € − 45,25% × impôt brut, nul au-delà d'un impôt brut ≈3 277€ | 2025 | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 | CGI art. 197, I-4°-a | 2026-08-12 | BOFiP BOI-IR-LIQ-20-20-30 (id. 20260407) |
 | Plafonnement du quotient familial — plafond général par demi-part | 1 807 € | 2025 | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 | CGI art. 197, I-2 | 2026-08-12 | BOFiP BOI-IR-LIQ-20-20-20 (id. 20260407) |
 | Parts de quotient familial (cas général) | 1 part célibataire, 2 parts couple, +0,5 part/enfant (2 premiers), +1 part/enfant suivant | toutes années | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006307074 | CGI art. 194 | 2026-08-12 | — |
+| Champ d'application de l'abattement 10% — inclut les allocations chômage (France Travail) et indemnités de préretraite dans le même pool que le salaire ; exclut les pensions/retraites | — | toutes années | https://bofip.impots.gouv.fr/bofip/2287-PGP.html/identifiant=BOI-RSA-BASE-30-50-20-20190301 | BOI-RSA-BASE-30-50-20 | 2026-08-12 | — |
+| Case 1AP/1BP = allocations chômage et indemnités de préretraite (« autres revenus imposables ») | — | 2025 | https://www.impots.gouv.fr/particulier/salaires-et-assimiles | Notice 2042 ; vérifié sur simulateur-ir-ifi.impots.gouv.fr | 2026-08-12 | — |
 
 Note : le ratio d'estimation brut → net imposable (80%, `src/lib/tax-rules/2025/estimation.ts`) n'apparaît **pas** dans cette table — ce n'est pas une règle fiscale sourcée officiellement, mais une heuristique documentée directement dans le fichier concerné.
 
