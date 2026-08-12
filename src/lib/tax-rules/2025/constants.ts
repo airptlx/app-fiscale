@@ -61,3 +61,18 @@ export const DECOTE_COUPLE_2025 = {
  * Récupéré le 2026-08-12.
  */
 export const PLAFOND_QUOTIENT_FAMILIAL_DEMI_PART_2025 = 1_807;
+
+/**
+ * Abattement de 10% sur les pensions et retraites, revenus 2025 — mécanique
+ * distincte de l'abattement salaires/chômage (constants ci-dessus) : ce même
+ * abattement pool ne s'applique PAS aux pensions (BOFiP BOI-RSA-BASE-30-50-20,
+ * cf. incrément 5). Plancher par pensionné, plafond partagé par foyer fiscal
+ * (pas doublé pour un couple de deux pensionnés).
+ * Base légale : CGI art. 158, 5°, a (2e et 3e alinéas).
+ * https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051765203
+ * BOFiP : bofip.impots.gouv.fr/bofip/7458-PGP.html/identifiant=BOI-RSA-PENS-30-10-10-20170531
+ * Recoupé : service-public.gouv.fr/particuliers/vosdroits/F415
+ * Récupéré le 2026-08-13.
+ */
+export const PENSION_ABATTEMENT_PLANCHER_2025 = 454;
+export const PENSION_ABATTEMENT_PLAFOND_2025 = 4_439;

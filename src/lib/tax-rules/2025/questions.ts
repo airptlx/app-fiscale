@@ -92,6 +92,29 @@ export const QUESTIONS_2025: Question[] = [
         : "Merci d'indiquer un montant positif ou nul.",
   },
   {
+    id: "pension",
+    type: "boolean",
+    prompt: "Avez-vous perçu une pension de retraite en 2025 ?",
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "celibataire" ||
+      answers["situation-conjugale"] === "couple",
+  },
+  {
+    id: "montant-pension-2025",
+    type: "number",
+    prompt: "Quel est le montant imposable de votre pension de retraite perçue en 2025 ?",
+    helpText:
+      "C'est le montant brut, avant tout abattement — souvent déjà pré-rempli sur votre déclaration si votre caisse de retraite l'a transmis à l'administration. Ne déduisez rien vous-même : l'abattement est calculé automatiquement.",
+    isVisible: (answers) =>
+      (answers["situation-conjugale"] === "celibataire" ||
+        answers["situation-conjugale"] === "couple") &&
+      answers["pension"] === true,
+    validate: (value) =>
+      typeof value === "number" && value >= 0
+        ? undefined
+        : "Merci d'indiquer un montant positif ou nul.",
+  },
+  {
     id: "conjoint-a-un-salaire",
     type: "boolean",
     prompt: "Votre conjoint·e a-t-il/elle également un salaire à déclarer ?",
@@ -150,6 +173,25 @@ export const QUESTIONS_2025: Question[] = [
       "Ce montant figure sur son attestation fiscale annuelle, envoyée par France Travail (ex Pôle emploi) en début d'année suivante. Ce n'est pas le total versé sur son compte : l'attestation indique déjà la part imposable.",
     isVisible: (answers) =>
       answers["situation-conjugale"] === "couple" && answers["chomage-conjoint"] === true,
+    validate: (value) =>
+      typeof value === "number" && value >= 0
+        ? undefined
+        : "Merci d'indiquer un montant positif ou nul.",
+  },
+  {
+    id: "pension-conjoint",
+    type: "boolean",
+    prompt: "Votre conjoint·e a-t-il/elle perçu une pension de retraite en 2025 ?",
+    isVisible: (answers) => answers["situation-conjugale"] === "couple",
+  },
+  {
+    id: "montant-pension-2025-conjoint",
+    type: "number",
+    prompt: "Quel est le montant imposable de la pension de retraite perçue par votre conjoint·e en 2025 ?",
+    helpText:
+      "C'est le montant brut, avant tout abattement — souvent déjà pré-rempli sur votre déclaration si sa caisse de retraite l'a transmis à l'administration. Ne déduisez rien vous-même : l'abattement est calculé automatiquement.",
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "couple" && answers["pension-conjoint"] === true,
     validate: (value) =>
       typeof value === "number" && value >= 0
         ? undefined

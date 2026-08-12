@@ -3,9 +3,11 @@ import { UnsupportedSituationError } from "../errors";
 import {
   computeDeclaration,
   computeParts,
+  computePensionTaxableIncome,
   computeProgressiveTax,
   computeTaxableIncome,
   resolveChomage,
+  resolvePension,
 } from "./compute";
 import { estimateNetImposableFromBrut } from "./estimation";
 
@@ -323,5 +325,111 @@ describe("computeDeclaration (2025, allocations chômage — case 1AP/1BP)", () 
       2025,
     );
     expect(result.lines.map((l) => l.code)).toEqual(["1AJ", undefined, undefined]);
+  });
+});
+
+describe("resolvePension", () => {
+  it("is 0 when pension is not declared", () => {
+    expect(resolvePension({})).toBe(0);
+    expect(resolvePension({ pension: false, "montant-pension-2025": 10_000 })).toBe(0);
+  });
+  it("reads the declared amount when pension is true", () => {
+    expect(resolvePension({ pension: true, "montant-pension-2025": 10_000 })).toBe(10_000);
+  });
+  it("supports the conjoint suffix independently", () => {
+    expect(
+      resolvePension(
+        { "pension-conjoint": true, "montant-pension-2025-conjoint": 12_000 },
+        "-conjoint",
+      ),
+    ).toBe(12_000);
+  });
+});
+
+describe("computePensionTaxableIncome (CGI art. 158, 5°, a — plancher/pensionné, plafond/foyer)", () => {
+  it("is 0 when neither person has a pension", () => {
+    expect(computePensionTaxableIncome(0, 0)).toBe(0);
+  });
+
+  it("applies the 454€ floor for a single modest pension (10% would be lower)", () => {
+    // 10% de 2 000 = 200 < 454 -> abattement = 454
+    expect(computePensionTaxableIncome(2_000, 0)).toBe(2_000 - 454);
+  });
+
+  it("applies a plain 10% for a single pension between floor and ceiling", () => {
+    // 10% de 10 000 = 1 000, entre 454 et 4 439
+    expect(computePensionTaxableIncome(10_000, 0)).toBe(10_000 - 1_000);
+  });
+
+  it("caps a single high pension at the household ceiling (4 439€)", () => {
+    // 10% de 90 000 = 9 000 > 4 439
+    expect(computePensionTaxableIncome(90_000, 0)).toBe(90_000 - 4_439);
+  });
+
+  it("shares the 4 439€ ceiling across two pensioners, not doubling it", () => {
+    // 10% de chacun = 3 000 ; somme = 6 000 > 4 439 -> plafonné à 4 439 au total
+    expect(computePensionTaxableIncome(30_000, 30_000)).toBe(60_000 - 4_439);
+  });
+
+  it("applies the floor to each pensioner independently before summing", () => {
+    // vous: 10% de 1 000 = 100 < 454 -> 454 ; conjoint: 10% de 10 000 = 1 000
+    // somme = 1 454, sous le plafond -> pas de plafonnement
+    expect(computePensionTaxableIncome(1_000, 10_000)).toBe(11_000 - 1_454);
+  });
+});
+
+describe("computeDeclaration (2025, pensions de retraite — case 1AS/1BS)", () => {
+  it("adds a 1AS line and a separate pensions taxable-income line (célibataire, salaire + pension)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        pension: true,
+        "montant-pension-2025": 2_000,
+      },
+      2025,
+    );
+    const codes = result.lines.map((l) => l.code);
+    expect(codes).toEqual(["1AJ", "1AS", undefined, undefined, undefined]);
+    const pensionLine = result.lines.find((l) => l.code === "1AS");
+    expect(pensionLine).toEqual(expect.objectContaining({ value: 2_000 }));
+    // Ligne "pensions" séparée : 2 000 - 454 (plancher) = 1 546.
+    const pensionsTaxableLine = result.lines[3];
+    expect(pensionsTaxableLine).toEqual(expect.objectContaining({ value: 1_546 }));
+  });
+
+  it("has no 1BJ/1BP line but a 1BS line when the conjoint is a pensioner only", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 0,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "conjoint-a-un-salaire": false,
+        "pension-conjoint": true,
+        "montant-pension-2025-conjoint": 10_000,
+      },
+      2025,
+    );
+    const codes = result.lines.map((l) => l.code);
+    expect(codes).not.toContain("1BJ");
+    expect(codes).not.toContain("1BP");
+    expect(codes).toContain("1BS");
+    const bsLine = result.lines.find((l) => l.code === "1BS");
+    expect(bsLine).toEqual(expect.objectContaining({ value: 10_000 }));
+  });
+
+  it("does not add pension lines when no pension is declared (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.lines.map((l) => l.code)).toEqual(["1AJ", undefined, undefined]);
+    expect(result.lines).toHaveLength(3);
   });
 });

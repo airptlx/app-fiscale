@@ -24,28 +24,32 @@ describe("getVisibleQuestions", () => {
     ]);
   });
 
-  it("reveals fiche-paie-disponible and chomage directly for a célibataire (no children question)", () => {
-    // chomage ne dépend que de situation-conjugale (comme fiche-paie-disponible),
-    // donc visible dès ce stade même si posée plus tard dans l'ordre du tableau.
+  it("reveals fiche-paie-disponible, chomage and pension directly for a célibataire (no children question)", () => {
+    // chomage et pension ne dépendent que de situation-conjugale (comme
+    // fiche-paie-disponible), donc visibles dès ce stade même si posées plus
+    // tard dans l'ordre du tableau.
     const answers: Answers = { "situation-conjugale": "celibataire" };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
       "fiche-paie-disponible",
       "chomage",
+      "pension",
     ]);
   });
 
-  it("reveals nombre-enfants-a-charge, fiche-paie-disponible, chomage, conjoint-a-un-salaire and chomage-conjoint for a couple", () => {
-    // conjoint-a-un-salaire et chomage-conjoint ne dépendent que de
-    // situation-conjugale : tous deux visibles dès ce stade.
+  it("reveals nombre-enfants-a-charge, fiche-paie-disponible, chomage, pension, conjoint-a-un-salaire, chomage-conjoint and pension-conjoint for a couple", () => {
+    // conjoint-a-un-salaire, chomage-conjoint et pension-conjoint ne dépendent
+    // que de situation-conjugale : tous visibles dès ce stade.
     const answers: Answers = { "situation-conjugale": "couple" };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
       "nombre-enfants-a-charge",
       "fiche-paie-disponible",
       "chomage",
+      "pension",
       "conjoint-a-un-salaire",
       "chomage-conjoint",
+      "pension-conjoint",
     ]);
   });
 
@@ -59,6 +63,7 @@ describe("getVisibleQuestions", () => {
       "fiche-paie-disponible",
       "salaire-net-imposable-2025",
       "chomage",
+      "pension",
     ]);
   });
 
@@ -72,6 +77,7 @@ describe("getVisibleQuestions", () => {
       "fiche-paie-disponible",
       "salaire-brut-annuel-2025",
       "chomage",
+      "pension",
     ]);
   });
 
@@ -88,6 +94,7 @@ describe("getVisibleQuestions", () => {
       "salaire-net-imposable-2025",
       "chomage",
       "montant-chomage-2025",
+      "pension",
     ]);
   });
 
@@ -101,7 +108,35 @@ describe("getVisibleQuestions", () => {
     expect(ids(getVisibleQuestions(Q, answers))).not.toContain("montant-chomage-2025");
   });
 
-  it("reveals conjoint-a-un-salaire and chomage-conjoint once the couple's own salary question is answered", () => {
+  it("reveals the montant-pension-2025 question once pension is answered true", () => {
+    const answers: Answers = {
+      "situation-conjugale": "celibataire",
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 28_000,
+      chomage: false,
+      pension: true,
+    };
+    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
+      "situation-conjugale",
+      "fiche-paie-disponible",
+      "salaire-net-imposable-2025",
+      "chomage",
+      "pension",
+      "montant-pension-2025",
+    ]);
+  });
+
+  it("does not reveal montant-pension-2025 when pension is false", () => {
+    const answers: Answers = {
+      "situation-conjugale": "celibataire",
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 28_000,
+      pension: false,
+    };
+    expect(ids(getVisibleQuestions(Q, answers))).not.toContain("montant-pension-2025");
+  });
+
+  it("reveals conjoint-a-un-salaire, chomage-conjoint and pension-conjoint once the couple's own salary question is answered", () => {
     const answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 0,
@@ -114,8 +149,10 @@ describe("getVisibleQuestions", () => {
       "fiche-paie-disponible",
       "salaire-net-imposable-2025",
       "chomage",
+      "pension",
       "conjoint-a-un-salaire",
       "chomage-conjoint",
+      "pension-conjoint",
     ]);
   });
 
@@ -133,8 +170,10 @@ describe("getVisibleQuestions", () => {
       "fiche-paie-disponible",
       "salaire-net-imposable-2025",
       "chomage",
+      "pension",
       "conjoint-a-un-salaire",
       "chomage-conjoint",
+      "pension-conjoint",
     ]);
   });
 
@@ -148,6 +187,18 @@ describe("getVisibleQuestions", () => {
       "chomage-conjoint": true,
     };
     expect(ids(getVisibleQuestions(Q, answers))).toContain("montant-chomage-2025-conjoint");
+  });
+
+  it("reveals montant-pension-2025-conjoint once pension-conjoint is answered true, independently of conjoint-a-un-salaire", () => {
+    const answers: Answers = {
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 30_000,
+      "conjoint-a-un-salaire": false,
+      "pension-conjoint": true,
+    };
+    expect(ids(getVisibleQuestions(Q, answers))).toContain("montant-pension-2025-conjoint");
   });
 
   it("walks the full conjoint branch (fiche-paie-disponible-conjoint then net-imposable-conjoint)", () => {
@@ -165,10 +216,12 @@ describe("getVisibleQuestions", () => {
       "fiche-paie-disponible",
       "salaire-net-imposable-2025",
       "chomage",
+      "pension",
       "conjoint-a-un-salaire",
       "fiche-paie-disponible-conjoint",
       "salaire-net-imposable-2025-conjoint",
       "chomage-conjoint",
+      "pension-conjoint",
     ]);
   });
 });
@@ -182,7 +235,7 @@ describe("getNextQuestion", () => {
     expect(getNextQuestion(Q, { "situation-conjugale": "autre" })).toBeUndefined();
   });
 
-  it("walks the célibataire exact-path branch to completion, including chomage", () => {
+  it("walks the célibataire exact-path branch to completion, including chomage and pension", () => {
     let answers: Answers = {};
     answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
     expect(getNextQuestion(Q, answers)?.id).toBe("fiche-paie-disponible");
@@ -193,10 +246,14 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "chomage", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("montant-chomage-2025");
     answers = answerQuestion(Q, answers, "montant-chomage-2025", 3_000);
+    expect(getNextQuestion(Q, answers)?.id).toBe("pension");
+    answers = answerQuestion(Q, answers, "pension", true);
+    expect(getNextQuestion(Q, answers)?.id).toBe("montant-pension-2025");
+    answers = answerQuestion(Q, answers, "montant-pension-2025", 2_000);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
-  it("walks the célibataire estimation branch to completion, skipping montant-chomage-2025 when chomage is false", () => {
+  it("walks the célibataire estimation branch to completion, skipping the amount questions when chomage and pension are false", () => {
     let answers: Answers = {};
     answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", false);
@@ -204,6 +261,8 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "salaire-brut-annuel-2025", 35_000);
     expect(getNextQuestion(Q, answers)?.id).toBe("chomage");
     answers = answerQuestion(Q, answers, "chomage", false);
+    expect(getNextQuestion(Q, answers)?.id).toBe("pension");
+    answers = answerQuestion(Q, answers, "pension", false);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
@@ -216,10 +275,14 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 30_000);
     expect(getNextQuestion(Q, answers)?.id).toBe("chomage");
     answers = answerQuestion(Q, answers, "chomage", false);
+    expect(getNextQuestion(Q, answers)?.id).toBe("pension");
+    answers = answerQuestion(Q, answers, "pension", false);
     expect(getNextQuestion(Q, answers)?.id).toBe("conjoint-a-un-salaire");
     answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", false);
     expect(getNextQuestion(Q, answers)?.id).toBe("chomage-conjoint");
     answers = answerQuestion(Q, answers, "chomage-conjoint", false);
+    expect(getNextQuestion(Q, answers)?.id).toBe("pension-conjoint");
+    answers = answerQuestion(Q, answers, "pension-conjoint", false);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
@@ -230,6 +293,7 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
     answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 30_000);
     answers = answerQuestion(Q, answers, "chomage", false);
+    answers = answerQuestion(Q, answers, "pension", false);
     expect(getNextQuestion(Q, answers)?.id).toBe("conjoint-a-un-salaire");
     answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("fiche-paie-disponible-conjoint");
@@ -240,18 +304,25 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "chomage-conjoint", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("montant-chomage-2025-conjoint");
     answers = answerQuestion(Q, answers, "montant-chomage-2025-conjoint", 6_000);
+    expect(getNextQuestion(Q, answers)?.id).toBe("pension-conjoint");
+    answers = answerQuestion(Q, answers, "pension-conjoint", true);
+    expect(getNextQuestion(Q, answers)?.id).toBe("montant-pension-2025-conjoint");
+    answers = answerQuestion(Q, answers, "montant-pension-2025-conjoint", 8_000);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
-  it("reaches chomage-conjoint even when the conjoint never answers the salary question", () => {
+  it("reaches chomage-conjoint and pension-conjoint even when the conjoint never answers the salary question", () => {
     let answers: Answers = {};
     answers = answerQuestion(Q, answers, "situation-conjugale", "couple");
     answers = answerQuestion(Q, answers, "nombre-enfants-a-charge", 0);
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
     answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 30_000);
     answers = answerQuestion(Q, answers, "chomage", false);
+    answers = answerQuestion(Q, answers, "pension", false);
     answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", false);
     expect(getNextQuestion(Q, answers)?.id).toBe("chomage-conjoint");
+    answers = answerQuestion(Q, answers, "chomage-conjoint", false);
+    expect(getNextQuestion(Q, answers)?.id).toBe("pension-conjoint");
   });
 });
 
@@ -297,21 +368,33 @@ describe("getPreviousQuestion", () => {
     };
     expect(getPreviousQuestion(Q, answers, "chomage")?.id).toBe("salaire-net-imposable-2025");
   });
+
+  it("returns chomage from pension when chomage is unanswered (montant-chomage-2025 not visible)", () => {
+    const answers: Answers = {
+      "situation-conjugale": "celibataire",
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 28_000,
+    };
+    expect(getPreviousQuestion(Q, answers, "pension")?.id).toBe("chomage");
+  });
 });
 
 describe("answerQuestion (cascade clear)", () => {
-  it("clears all downstream answers when situation-conjugale flips to célibataire", () => {
+  it("clears couple-only downstream answers when situation-conjugale flips to célibataire, but keeps vous-only chomage/pension", () => {
     let answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 2,
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 30_000,
       chomage: false,
+      pension: false,
       "conjoint-a-un-salaire": true,
       "fiche-paie-disponible-conjoint": true,
       "salaire-net-imposable-2025-conjoint": 30_000,
       "chomage-conjoint": true,
       "montant-chomage-2025-conjoint": 6_000,
+      "pension-conjoint": true,
+      "montant-pension-2025-conjoint": 8_000,
     };
     answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
     expect(answers).toEqual({
@@ -319,21 +402,25 @@ describe("answerQuestion (cascade clear)", () => {
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 30_000,
       chomage: false,
+      pension: false,
     });
   });
 
-  it("clears conjoint salary answers when conjoint-a-un-salaire flips to false, but keeps chomage-conjoint (independent question)", () => {
+  it("clears conjoint salary answers when conjoint-a-un-salaire flips to false, but keeps chomage-conjoint/pension-conjoint (independent questions)", () => {
     let answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 0,
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 30_000,
       chomage: false,
+      pension: false,
       "conjoint-a-un-salaire": true,
       "fiche-paie-disponible-conjoint": true,
       "salaire-net-imposable-2025-conjoint": 30_000,
       "chomage-conjoint": true,
       "montant-chomage-2025-conjoint": 6_000,
+      "pension-conjoint": true,
+      "montant-pension-2025-conjoint": 8_000,
     };
     answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", false);
     expect(answers).toEqual({
@@ -342,9 +429,12 @@ describe("answerQuestion (cascade clear)", () => {
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 30_000,
       chomage: false,
+      pension: false,
       "conjoint-a-un-salaire": false,
       "chomage-conjoint": true,
       "montant-chomage-2025-conjoint": 6_000,
+      "pension-conjoint": true,
+      "montant-pension-2025-conjoint": 8_000,
     });
   });
 
@@ -377,6 +467,23 @@ describe("answerQuestion (cascade clear)", () => {
       chomage: false,
     });
   });
+
+  it("clears montant-pension-2025 when pension flips to false", () => {
+    let answers: Answers = {
+      "situation-conjugale": "celibataire",
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 28_000,
+      pension: true,
+      "montant-pension-2025": 2_000,
+    };
+    answers = answerQuestion(Q, answers, "pension", false);
+    expect(answers).toEqual({
+      "situation-conjugale": "celibataire",
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 28_000,
+      pension: false,
+    });
+  });
 });
 
 describe("isQuestionnaireComplete", () => {
@@ -392,25 +499,28 @@ describe("isQuestionnaireComplete", () => {
     expect(isQuestionnaireComplete(Q, { "situation-conjugale": "autre" })).toBe(true);
   });
 
-  it("is true once the célibataire exact-path branch, chomage included, is fully answered", () => {
+  it("is true once the célibataire exact-path branch, chomage and pension included, is fully answered", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
       chomage: false,
+      pension: false,
     };
     expect(isQuestionnaireComplete(Q, answers)).toBe(true);
   });
 
-  it("is true once the couple branch (no conjoint salary), chomage included, is fully answered", () => {
+  it("is true once the couple branch (no conjoint salary), chomage and pension included, is fully answered", () => {
     const answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 1,
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
       chomage: false,
+      pension: false,
       "conjoint-a-un-salaire": false,
       "chomage-conjoint": false,
+      "pension-conjoint": false,
     };
     expect(isQuestionnaireComplete(Q, answers)).toBe(true);
   });
@@ -421,12 +531,13 @@ describe("getProgress", () => {
     expect(getProgress(Q, {}, "situation-conjugale")).toEqual({ position: 1, total: 1 });
   });
 
-  it("reports 2 of 6 on nombre-enfants-a-charge for a couple", () => {
-    // total = 6 dès ce stade : conjoint-a-un-salaire, chomage et chomage-conjoint
-    // sont déjà visibles (ne dépendent que de situation-conjugale), même s'ils
-    // ne sont atteints qu'après dans l'ordre du tableau.
+  it("reports 2 of 8 on nombre-enfants-a-charge for a couple", () => {
+    // total = 8 dès ce stade : conjoint-a-un-salaire, chomage, pension,
+    // chomage-conjoint et pension-conjoint sont déjà visibles (ne dépendent
+    // que de situation-conjugale), même s'ils ne sont atteints qu'après dans
+    // l'ordre du tableau.
     const answers: Answers = { "situation-conjugale": "couple" };
-    expect(getProgress(Q, answers, "nombre-enfants-a-charge")).toEqual({ position: 2, total: 6 });
+    expect(getProgress(Q, answers, "nombre-enfants-a-charge")).toEqual({ position: 2, total: 8 });
   });
 
   it("reports position = total when complete (currentQuestionId undefined)", () => {
@@ -435,6 +546,6 @@ describe("getProgress", () => {
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
     };
-    expect(getProgress(Q, answers, undefined)).toEqual({ position: 4, total: 4 });
+    expect(getProgress(Q, answers, undefined)).toEqual({ position: 5, total: 5 });
   });
 });

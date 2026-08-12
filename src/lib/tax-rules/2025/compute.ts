@@ -6,6 +6,8 @@ import {
   BAREME_2025,
   DECOTE_CELIBATAIRE_2025,
   DECOTE_COUPLE_2025,
+  PENSION_ABATTEMENT_PLAFOND_2025,
+  PENSION_ABATTEMENT_PLANCHER_2025,
   PLAFOND_QUOTIENT_FAMILIAL_DEMI_PART_2025,
 } from "./constants";
 import { estimateNetImposableFromBrut } from "./estimation";
@@ -126,6 +128,36 @@ export function resolveChomage(answers: Answers, suffix: "" | "-conjoint" = ""):
   return Number(answers[`montant-chomage-2025${suffix}`] ?? 0);
 }
 
+/**
+ * BOI-RSA-BASE-30-50-20 : les pensions/retraites sont exclues de l'abattement
+ * salaires/chômage. `suffix` distingue "vous" ("") du conjoint ("-conjoint").
+ */
+export function resolvePension(answers: Answers, suffix: "" | "-conjoint" = ""): number {
+  if (answers[`pension${suffix}`] !== true) return 0;
+  return Number(answers[`montant-pension-2025${suffix}`] ?? 0);
+}
+
+/**
+ * CGI art. 158, 5°, a : abattement de 10% sur les pensions et retraites, distinct
+ * de celui des salaires/chômage. Le plancher (454€) s'apprécie par pensionné,
+ * mais le plafond (4 439€) est commun à tout le foyer fiscal — pas doublé pour un
+ * couple de deux pensionnés. Chaque abattement individuel est plafonné à sa
+ * propre pension avant d'être sommé, puis la somme est plafonnée au niveau foyer.
+ */
+export function computePensionTaxableIncome(pensionVous: number, pensionConjoint: number): number {
+  const totalPensions = pensionVous + pensionConjoint;
+  if (totalPensions <= 0) return 0;
+
+  const individualAbattement = (pension: number): number => {
+    if (pension <= 0) return 0;
+    return Math.min(Math.max(pension * 0.1, PENSION_ABATTEMENT_PLANCHER_2025), pension);
+  };
+
+  const rawAbattement = individualAbattement(pensionVous) + individualAbattement(pensionConjoint);
+  const abattement = Math.min(rawAbattement, PENSION_ABATTEMENT_PLAFOND_2025, totalPensions);
+  return Math.round(totalPensions - abattement);
+}
+
 function formatParts(parts: number): string {
   return String(parts).replace(".", ",");
 }
@@ -157,7 +189,14 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const taxableIncomeConjoint = conjointADesRevenus
     ? computeTaxableIncome(conjoint.netImposable + chomageConjoint)
     : 0;
-  const taxableIncome = taxableIncomeVous + taxableIncomeConjoint;
+
+  const pensionDeclare = answers["pension"] === true;
+  const pensionVous = resolvePension(answers, "");
+  const pensionConjointDeclare = isCouple && answers["pension-conjoint"] === true;
+  const pensionConjoint = pensionConjointDeclare ? resolvePension(answers, "-conjoint") : 0;
+  const taxableIncomePensions = computePensionTaxableIncome(pensionVous, pensionConjoint);
+
+  const taxableIncome = taxableIncomeVous + taxableIncomeConjoint + taxableIncomePensions;
 
   const parts = computeParts(answers);
   const { brutTax, isCapped } = computeQuotientFamilialTax(taxableIncome, parts, isCouple);
@@ -213,14 +252,47 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     });
   }
 
-  lines.push(
-    {
-      label: "Revenu imposable retenu pour le foyer, après abattement de 10% pour frais professionnels",
-      value: taxableIncome,
+  if (pensionDeclare) {
+    lines.push({
+      code: "1AS",
+      label: "Pension de retraite à déclarer (vous)",
+      value: pensionVous,
       explanation:
-        "L'administration applique automatiquement un abattement de 10% sur l'ensemble des sommes touchées par chaque déclarant au titre du salaire et, le cas échéant, des allocations chômage (au moins 509€, au plus 14 555€ chacun pour les revenus 2025), pour couvrir forfaitairement ses frais professionnels courants.",
-      source: "CGI art. 83, 3° ; BOFiP BOI-BAREME-000035, BOI-RSA-BASE-30-50-20",
-    },
+        "C'est le montant brut de votre pension, avant abattement, à reporter dans la case 1AS.",
+      source: "impots.gouv.fr — Pensions de retraite ; CGI art. 158, 5°, a",
+    });
+  }
+
+  if (pensionConjointDeclare) {
+    lines.push({
+      code: "1BS",
+      label: "Pension de retraite à déclarer (conjoint·e)",
+      value: pensionConjoint,
+      explanation:
+        "C'est le montant brut de la pension de votre conjoint·e, avant abattement, à reporter dans la case 1BS.",
+      source: "impots.gouv.fr — Pensions de retraite ; CGI art. 158, 5°, a",
+    });
+  }
+
+  lines.push({
+    label: "Revenu imposable retenu pour le foyer, après abattement de 10% pour frais professionnels",
+    value: taxableIncomeVous + taxableIncomeConjoint,
+    explanation:
+      "L'administration applique automatiquement un abattement de 10% sur l'ensemble des sommes touchées par chaque déclarant au titre du salaire et, le cas échéant, des allocations chômage (au moins 509€, au plus 14 555€ chacun pour les revenus 2025), pour couvrir forfaitairement ses frais professionnels courants.",
+    source: "CGI art. 83, 3° ; BOFiP BOI-BAREME-000035, BOI-RSA-BASE-30-50-20",
+  });
+
+  if (pensionDeclare || pensionConjointDeclare) {
+    lines.push({
+      label: "Revenu imposable retenu pour le foyer, pensions et retraites, après abattement de 10%",
+      value: taxableIncomePensions,
+      explanation:
+        "L'administration applique un abattement de 10% distinct de celui des salaires sur l'ensemble des pensions du foyer (au moins 454€ par pensionné, mais 4 439€ au maximum pour tout le foyer, même si vous êtes deux à percevoir une pension).",
+      source: "CGI art. 158, 5°, a",
+    });
+  }
+
+  lines.push(
     {
       label: "Impôt sur le revenu (avant réductions et crédits d'impôt éventuels)",
       value: tax,
