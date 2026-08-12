@@ -14,6 +14,8 @@ et ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 - Configuration des tests (Vitest, React Testing Library).
 - Documentation de départ : `README.md`, `SPEC.md`, `CLAUDE.md`, `docs/`.
 
-## [0.1.0] - À venir
+## [0.1.0] - 2026-08-12
 
 Première version déployée : scaffold vide validé de bout en bout (build, tests, déploiement Vercel).
+
+Live : https://app-fiscale.vercel.app/
