@@ -20,6 +20,10 @@ et ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 - Configuration des tests (Vitest, React Testing Library).
 - Documentation de départ : `README.md`, `SPEC.md`, `CLAUDE.md`, `docs/`.
 
+### Corrigé
+
+- Suppression du composant `RegisterPWA` (enregistrement manuel du service worker), redondant avec l'enregistrement automatique déjà fait par `@serwist/next` (option `register`, vraie par défaut) — la double tentative provoquait une erreur console "Cannot re-register a Serwist instance", découverte pendant la vérification manuelle du parcours.
+
 ## [0.1.0] - 2026-08-12
 
 Première version déployée : scaffold vide validé de bout en bout (build, tests, déploiement Vercel).

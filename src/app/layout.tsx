@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
-import RegisterPWA from "./register-pwa";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,7 +32,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <RegisterPWA />
+        {/* Pas de composant d'enregistrement manuel : @serwist/next enregistre
+            le service worker automatiquement (option register, défaut true). */}
         <div className="flex flex-1 flex-col">{children}</div>
         <SiteFooter />
       </body>
