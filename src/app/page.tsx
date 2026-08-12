@@ -26,7 +26,7 @@ export default function Home() {
         <h1 className="text-3xl font-semibold tracking-tight">Assistant Déclaration d&apos;Impôts</h1>
         <p className="text-lg text-muted-foreground">
           Répondez à quelques questions simples, sans jargon fiscal, et obtenez une liste claire
-          de ce qu&apos;il faut inscrire sur votre déclaration de revenus — et où.
+          de ce qu&apos;il faut inscrire sur votre déclaration de revenus.
         </p>
       </div>
 

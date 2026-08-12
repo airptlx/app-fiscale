@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatEuros } from "@/lib/format";
 import type { DeclarationLine } from "@/lib/tax-rules/types";
 
@@ -21,7 +21,6 @@ export function ResultLines({ lines }: { lines: DeclarationLine[] }) {
             </CardTitle>
             <CardDescription>{line.explanation}</CardDescription>
           </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">Source : {line.source}</CardContent>
         </Card>
       ))}
     </div>
