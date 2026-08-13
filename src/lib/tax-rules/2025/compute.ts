@@ -6,6 +6,7 @@ import {
   BAREME_2025,
   DECOTE_CELIBATAIRE_2025,
   DECOTE_COUPLE_2025,
+  MICRO_FONCIER_SEUIL_2025,
   PENSION_ABATTEMENT_PLAFOND_2025,
   PENSION_ABATTEMENT_PLANCHER_2025,
   PLAFOND_QUOTIENT_FAMILIAL_DEMI_PART_2025,
@@ -158,6 +159,27 @@ export function computePensionTaxableIncome(pensionVous: number, pensionConjoint
   return Math.round(totalPensions - abattement);
 }
 
+/**
+ * Revenus fonciers : revenu commun au foyer (une seule réponse, pas de suffixe
+ * vous/conjoint — contrairement au salaire/chômage/pension), cf. plan incrément 7.
+ */
+export function resolveFoncier(answers: Answers): number {
+  if (answers["foncier"] !== true) return 0;
+  return Number(answers["montant-foncier-2025"] ?? 0);
+}
+
+/**
+ * CGI art. 32 : régime micro-foncier (location non meublée), applicable jusqu'à
+ * `MICRO_FONCIER_SEUIL_2025` de recettes brutes annuelles pour le foyer.
+ * Abattement forfaitaire de 30%, sans plancher (contrairement aux abattements
+ * salaires/pensions). Au-delà du seuil, le régime réel est obligatoire : c'est à
+ * `computeDeclaration` de lever `UnsupportedSituationError`, pas à cette fonction.
+ */
+export function computeFoncierTaxableIncome(recettesBrutes: number): number {
+  if (recettesBrutes <= 0) return 0;
+  return Math.round(recettesBrutes * 0.7);
+}
+
 function formatParts(parts: number): string {
   return String(parts).replace(".", ",");
 }
@@ -224,6 +246,13 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   }
   const isCouple = situation === "couple";
 
+  const recettesBrutesFoncier = resolveFoncier(answers);
+  if (recettesBrutesFoncier > MICRO_FONCIER_SEUIL_2025) {
+    throw new UnsupportedSituationError(
+      "Vos revenus fonciers dépassent 15 000 € par an pour le foyer : le régime réel s'applique alors obligatoirement (déduction des charges réelles), ce que cet outil ne prend pas encore en charge. Vérifiez votre déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+    );
+  }
+
   const vous = resolveNetImposable(answers, "");
   const conjointASalaire = isCouple && answers["conjoint-a-un-salaire"] === true;
   const conjoint = conjointASalaire
@@ -247,7 +276,11 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const pensionConjoint = pensionConjointDeclare ? resolvePension(answers, "-conjoint") : 0;
   const taxableIncomePensions = computePensionTaxableIncome(pensionVous, pensionConjoint);
 
-  const taxableIncome = taxableIncomeVous + taxableIncomeConjoint + taxableIncomePensions;
+  const foncierDeclare = answers["foncier"] === true;
+  const taxableIncomeFoncier = computeFoncierTaxableIncome(recettesBrutesFoncier);
+
+  const taxableIncome =
+    taxableIncomeVous + taxableIncomeConjoint + taxableIncomePensions + taxableIncomeFoncier;
 
   const parts = computeParts(answers);
   const { brutTax, isCapped } = computeQuotientFamilialTax(taxableIncome, parts, isCouple);
@@ -325,6 +358,17 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     });
   }
 
+  if (foncierDeclare) {
+    lines.push({
+      code: "4BE",
+      label: "Revenus fonciers bruts à déclarer (location non meublée)",
+      value: recettesBrutesFoncier,
+      explanation:
+        "C'est le montant brut des loyers perçus par le foyer, hors charges et avant abattement, à reporter dans la case 4BE.",
+      source: "impots.gouv.fr — Revenus fonciers ; CGI art. 32 (régime micro-foncier)",
+    });
+  }
+
   lines.push({
     label: "Revenu imposable retenu pour le foyer, après abattement de 10% pour frais professionnels",
     value: taxableIncomeVous + taxableIncomeConjoint,
@@ -340,6 +384,16 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "L'administration applique un abattement de 10% distinct de celui des salaires sur l'ensemble des pensions du foyer (au moins 454€ par pensionné, mais 4 439€ au maximum pour tout le foyer, même si vous êtes deux à percevoir une pension).",
       source: "CGI art. 158, 5°, a",
+    });
+  }
+
+  if (foncierDeclare) {
+    lines.push({
+      label: "Revenu foncier imposable retenu, après abattement de 30% (régime micro-foncier)",
+      value: taxableIncomeFoncier,
+      explanation:
+        "L'administration applique automatiquement un abattement forfaitaire de 30% sur les loyers bruts perçus, sans justificatif, tant que le total ne dépasse pas 15 000€ par an pour le foyer.",
+      source: "CGI art. 32",
     });
   }
 
@@ -366,10 +420,22 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
 
   const rawVous = vous.netImposable + chomageVous + pensionVous;
   const rawConjoint = conjoint.netImposable + chomageConjoint + pensionConjoint;
-  const tauxFoyer = computeTauxPrelevementSourceFoyer(tax, rawVous + rawConjoint);
+  const tauxFoyer = computeTauxPrelevementSourceFoyer(
+    tax,
+    rawVous + rawConjoint + recettesBrutesFoncier,
+  );
 
   let tauxPrelevementSource: TauxPrelevementSource;
-  if (isCouple) {
+  if (isCouple && recettesBrutesFoncier > 0) {
+    // Le foncier est un revenu commun au foyer (pas attribuable à vous/conjoint) :
+    // la formule du taux individualisé implémentée ici suppose l'absence de
+    // revenus communs (cf. plan incrément 7, décision 3). On se limite au taux
+    // foyer plutôt que de calculer un taux individualisé potentiellement faux.
+    tauxPrelevementSource = { foyer: tauxFoyer };
+    warnings.push(
+      "Le taux individualisé par conjoint n'est pas calculé ici car vos revenus fonciers sont communs au foyer : seul le taux foyer ci-dessous est indiqué. Consultez votre espace impots.gouv.fr pour le détail par conjoint.",
+    );
+  } else if (isCouple) {
     const taxableIncomeVousSeul = taxableIncomeVous + computePensionTaxableIncome(pensionVous, 0);
     const taxableIncomeConjointSeul =
       taxableIncomeConjoint + computePensionTaxableIncome(pensionConjoint, 0);

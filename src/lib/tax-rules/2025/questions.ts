@@ -197,4 +197,29 @@ export const QUESTIONS_2025: Question[] = [
         ? undefined
         : "Merci d'indiquer un montant positif ou nul.",
   },
+  {
+    id: "foncier",
+    type: "boolean",
+    prompt: "Avez-vous mis un logement en location (non meublée) en 2025, et perçu des loyers ?",
+    helpText:
+      "Cette question concerne uniquement la location non meublée (location « nue »). La location meublée relève d'un régime différent, pas encore pris en charge par cet outil.",
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "celibataire" ||
+      answers["situation-conjugale"] === "couple",
+  },
+  {
+    id: "montant-foncier-2025",
+    type: "number",
+    prompt: "Quel est le montant total des loyers bruts perçus par votre foyer en 2025 ?",
+    helpText:
+      "Montant brut, hors charges, avant tout abattement. S'il y a plusieurs logements ou que vous êtes en couple, indiquez le total pour tout le foyer — une seule réponse suffit.",
+    isVisible: (answers) =>
+      (answers["situation-conjugale"] === "celibataire" ||
+        answers["situation-conjugale"] === "couple") &&
+      answers["foncier"] === true,
+    validate: (value) =>
+      typeof value === "number" && value >= 0
+        ? undefined
+        : "Merci d'indiquer un montant positif ou nul.",
+  },
 ];

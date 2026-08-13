@@ -76,3 +76,17 @@ export const PLAFOND_QUOTIENT_FAMILIAL_DEMI_PART_2025 = 1_807;
  */
 export const PENSION_ABATTEMENT_PLANCHER_2025 = 454;
 export const PENSION_ABATTEMENT_PLAFOND_2025 = 4_439;
+
+/**
+ * Régime micro-foncier (location non meublée), toutes années : applicable si les
+ * recettes brutes annuelles du foyer fiscal n'excèdent pas ce seuil ; abattement
+ * forfaitaire de 30% (sans plancher, contrairement aux abattements salaires/
+ * pensions), taux laissé en dur dans compute.ts. Au-delà, le régime réel est
+ * obligatoire — hors scope, `UnsupportedSituationError`.
+ * Base légale : CGI art. 32 (« lorsque le montant du revenu brut annuel [...]
+ * n'excède pas 15 000 €, le revenu net foncier imposable est égal au revenu brut
+ * diminué d'un abattement de 30 % »).
+ * https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000048847610
+ * Récupéré le 2026-08-13.
+ */
+export const MICRO_FONCIER_SEUIL_2025 = 15_000;

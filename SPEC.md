@@ -28,17 +28,17 @@ Exemple : au lieu de "Optez-vous pour l'abattement forfaitaire de 10% ou les fra
 - Pensions de retraite, un ou deux déclarants, lignes 1AS/1BS — abattement de 10% distinct de celui du salaire/chômage, avec un plancher par pensionné (454€) mais un plafond commun à tout le foyer (4 439€, pas doublé pour un couple de deux pensionnés) (CGI art. 158, 5°, a).
 - Frais professionnels : abattement 10% vs frais réels (question simple, calcul automatique du régime le plus avantageux).
 - Situation familiale : célibataire sans enfant, ou marié/pacsé avec ou sans enfants (quotient familial, plafonnement général, décote spécifique couple). Le régime « parent isolé » (célibataire avec enfant(s) à charge, demi-part majorée) est nuancé ci-dessous, en roadmap plutôt qu'en inclus direct.
-- Taux de prélèvement à la source (PAS) : taux foyer et taux individualisé (défaut couples depuis le 01/09/2025), affichés sur l'écran de résultat avec explication (CGI art. 204 H). La grille de taux neutre (cas d'un nouvel employeur sans taux encore transmis) répond à un besoin différent et n'est pas couverte.
+- Revenus fonciers, régime micro-foncier uniquement (location non meublée, recettes brutes ≤ 15 000€/an pour le foyer), case 4BE — abattement forfaitaire de 30%, sans plancher (CGI art. 32). Au-delà du seuil, le régime réel s'applique obligatoirement et reste hors scope (`UnsupportedSituationError`).
+- Taux de prélèvement à la source (PAS) : taux foyer et taux individualisé (défaut couples depuis le 01/09/2025), affichés sur l'écran de résultat avec explication (CGI art. 204 H). Le taux individualisé n'est pas calculé pour un couple ayant des revenus fonciers (revenu commun, formule non encore étendue aux revenus communs — seul le taux foyer est alors affiché, avec avertissement). La grille de taux neutre (cas d'un nouvel employeur sans taux encore transmis) répond à un besoin différent et n'est pas couverte.
 - 3 à 5 crédits/déductions courants : dons, frais de garde d'enfants, emploi à domicile, versements PER.
 - Écran de résultat : liste des lignes à remplir + explications + avertissement.
 
 **Roadmap « revenus annexes » (planifiée, incréments dédiés — voir plan incrément 4)** — chacun de ces points nécessite son propre cycle Plan Mode avant implémentation, distinct du cas traitements et salaires :
-- Revenus fonciers (micro-foncier vs réel).
 - Revenus indépendants (micro-BIC/micro-BNC).
 - Célibataire avec enfant(s) à charge (« parent isolé », demi-part majorée et plafond spécifique — distinct du cas couple+enfants, cf. `docs/tax-rules-sources.md`).
 
 **Explicitement différé, hors roadmap actuelle :**
-- Indépendants au régime réel (au-delà du micro-BIC/micro-BNC planifié ci-dessus), plus-values, revenus de capitaux mobiliers.
+- Revenus fonciers au régime réel (au-delà du micro-foncier planifié ci-dessus), indépendants au régime réel (au-delà du micro-BIC/micro-BNC planifié ci-dessus), plus-values, revenus de capitaux mobiliers.
 - Non-résidents / expatriés.
 - Situations familiales complexes autres que parent isolé (garde alternée, rattachement d'enfants majeurs, veuvage).
 - Dispositifs de défiscalisation niche (Pinel, etc.).

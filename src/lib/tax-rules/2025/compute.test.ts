@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { UnsupportedSituationError } from "../errors";
 import {
   computeDeclaration,
+  computeFoncierTaxableIncome,
   computeParts,
   computePensionTaxableIncome,
   computeProgressiveTax,
@@ -9,6 +10,7 @@ import {
   computeTauxPrelevementSourceIndividualise,
   computeTaxableIncome,
   resolveChomage,
+  resolveFoncier,
   resolvePension,
 } from "./compute";
 import { estimateNetImposableFromBrut } from "./estimation";
@@ -535,6 +537,135 @@ describe("computeDeclaration — tauxPrelevementSource wiring", () => {
       2025,
     );
     expect(result.tauxPrelevementSource.foyer).toBeGreaterThan(0);
+    expect(result.tauxPrelevementSource.vous).toBeDefined();
+    expect(result.tauxPrelevementSource.conjoint).toBeDefined();
+  });
+});
+
+describe("resolveFoncier", () => {
+  it("is 0 when foncier is not declared", () => {
+    expect(resolveFoncier({})).toBe(0);
+    expect(resolveFoncier({ foncier: false, "montant-foncier-2025": 6_000 })).toBe(0);
+  });
+  it("reads the declared amount when foncier is true", () => {
+    expect(resolveFoncier({ foncier: true, "montant-foncier-2025": 6_000 })).toBe(6_000);
+  });
+});
+
+describe("computeFoncierTaxableIncome (CGI art. 32 — régime micro-foncier)", () => {
+  it("is 0 when there are no recettes", () => {
+    expect(computeFoncierTaxableIncome(0)).toBe(0);
+  });
+  it("applies a plain 30% abattement, no floor even on a small amount", () => {
+    // 10% chez les salaires aurait un plancher de 509€ ; le micro-foncier n'en a pas.
+    expect(computeFoncierTaxableIncome(100)).toBe(70);
+  });
+  it("applies the 30% abattement at the threshold (15 000€)", () => {
+    expect(computeFoncierTaxableIncome(15_000)).toBe(10_500);
+  });
+  it("applies a plain 30% abattement for a typical amount", () => {
+    expect(computeFoncierTaxableIncome(6_000)).toBe(4_200);
+  });
+});
+
+describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro-foncier)", () => {
+  it("adds a 4BE line and a separate foncier taxable-income line (célibataire, salaire + foncier)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        foncier: true,
+        "montant-foncier-2025": 6_000,
+      },
+      2025,
+    );
+    const codes = result.lines.map((l) => l.code);
+    expect(codes).toEqual(["1AJ", "4BE", undefined, undefined, undefined]);
+    const foncierLine = result.lines.find((l) => l.code === "4BE");
+    expect(foncierLine).toEqual(expect.objectContaining({ value: 6_000 }));
+    // Ligne "foncier" séparée : 6 000 - 30% = 4 200.
+    const foncierTaxableLine = result.lines[3];
+    expect(foncierTaxableLine).toEqual(expect.objectContaining({ value: 4_200 }));
+  });
+
+  it("throws UnsupportedSituationError when recettes exceed the 15 000€ seuil", () => {
+    expect(() =>
+      computeDeclaration(
+        {
+          "situation-conjugale": "celibataire",
+          "fiche-paie-disponible": true,
+          "salaire-net-imposable-2025": 20_000,
+          foncier: true,
+          "montant-foncier-2025": 15_001,
+        },
+        2025,
+      ),
+    ).toThrow(UnsupportedSituationError);
+  });
+
+  it("does not throw exactly at the 15 000€ seuil", () => {
+    expect(() =>
+      computeDeclaration(
+        {
+          "situation-conjugale": "celibataire",
+          "fiche-paie-disponible": true,
+          "salaire-net-imposable-2025": 20_000,
+          foncier: true,
+          "montant-foncier-2025": 15_000,
+        },
+        2025,
+      ),
+    ).not.toThrow();
+  });
+
+  it("does not add foncier lines when not declared (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.lines.map((l) => l.code)).toEqual(["1AJ", undefined, undefined]);
+    expect(result.lines).toHaveLength(3);
+  });
+
+  it("omits the individualised PAS rate for a couple with foncier income, and warns about it", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 0,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "conjoint-a-un-salaire": true,
+        "fiche-paie-disponible-conjoint": true,
+        "salaire-net-imposable-2025-conjoint": 20_000,
+        foncier: true,
+        "montant-foncier-2025": 6_000,
+      },
+      2025,
+    );
+    expect(result.tauxPrelevementSource.vous).toBeUndefined();
+    expect(result.tauxPrelevementSource.conjoint).toBeUndefined();
+    expect(result.tauxPrelevementSource.foyer).toBeGreaterThan(0);
+    expect(result.warnings?.some((w) => /taux individualisé/i.test(w))).toBe(true);
+  });
+
+  it("still computes the individualised PAS rate for a couple without foncier income (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 0,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "conjoint-a-un-salaire": true,
+        "fiche-paie-disponible-conjoint": true,
+        "salaire-net-imposable-2025-conjoint": 20_000,
+      },
+      2025,
+    );
     expect(result.tauxPrelevementSource.vous).toBeDefined();
     expect(result.tauxPrelevementSource.conjoint).toBeDefined();
   });
