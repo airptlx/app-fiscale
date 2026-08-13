@@ -23,7 +23,7 @@ export function ClearDataButton() {
       </Button>
       {cleared && (
         <p role="status" className="text-sm text-muted-foreground">
-          Vos réponses et votre consentement ont été effacés de cet appareil.
+          Tes réponses et ton consentement ont été effacés de cet appareil.
         </p>
       )}
     </div>

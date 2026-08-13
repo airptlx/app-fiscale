@@ -31,22 +31,22 @@ export default function QuestionnairePage() {
 
   if (!isHydrated || !disclaimer.isHydrated || !disclaimer.acknowledged || isComplete) {
     return (
-      <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-6 py-16">
-        <p role="status">Chargement de votre questionnaire…</p>
+      <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-6 py-10">
+        <p role="status">Chargement de ton questionnaire…</p>
       </main>
     );
   }
 
   if (!currentQuestion) {
     return (
-      <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-6 py-16">
-        <p role="status">Chargement de votre questionnaire…</p>
+      <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-6 py-10">
+        <p role="status">Chargement de ton questionnaire…</p>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-16">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-10">
       <QuestionnaireProgress position={progress.position} total={progress.total} />
       <QuestionForm
         question={currentQuestion}

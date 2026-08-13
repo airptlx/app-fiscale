@@ -6,7 +6,7 @@
  */
 export class UnsupportedSituationError extends Error {
   constructor(
-    message = "Cette situation n'est pas encore prise en charge par l'outil. Pour l'instant, sont gérées : une personne célibataire sans personne à charge, ou un couple marié/pacsé avec ou sans enfants à charge. Les situations de parent isolé, divorce, veuvage ou union libre avec garde partagée ne sont pas encore prises en charge.",
+    message = "Cette situation n'est pas encore prise en charge. Pour l'instant, on gère : une personne célibataire sans personne à charge, ou un couple marié/pacsé avec ou sans enfants à charge. Les situations de parent isolé, divorce, veuvage ou union libre avec garde partagée arrivent plus tard.",
   ) {
     super(message);
     this.name = "UnsupportedSituationError";

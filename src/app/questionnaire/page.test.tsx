@@ -20,7 +20,7 @@ describe("QuestionnairePage", () => {
     const user = userEvent.setup();
     render(<QuestionnairePage />);
 
-    await screen.findByText(/Quelle est votre situation/i);
+    await screen.findByText(/Quelle est ta situation/i);
     expect(screen.getByRole("button", { name: "Précédent" })).toBeDisabled();
 
     await user.click(screen.getByRole("radio", { name: /Célibataire/i }));
@@ -39,7 +39,7 @@ describe("QuestionnairePage", () => {
     await screen.findByText(/fiche de paie de décembre 2025/i);
 
     await user.click(screen.getByRole("button", { name: "Précédent" }));
-    await screen.findByText(/Quelle est votre situation/i);
+    await screen.findByText(/Quelle est ta situation/i);
   });
 
   it("redirects to / when the disclaimer has not been acknowledged", async () => {

@@ -1,4 +1,4 @@
-# Spec fonctionnelle — Assistant Déclaration d'Impôts
+# Spec fonctionnelle — décla
 
 ## Problème et utilisateurs
 

@@ -17,7 +17,7 @@ export function ResultLines({ lines }: { lines: DeclarationLine[] }) {
                 )}
                 {line.label}
               </span>
-              <span className="shrink-0 font-heading text-lg">{formatEuros(line.value)}</span>
+              <span className="shrink-0 font-mono text-lg tabular-nums">{formatEuros(line.value)}</span>
             </CardTitle>
             <CardDescription>{line.explanation}</CardDescription>
           </CardHeader>

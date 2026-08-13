@@ -323,14 +323,14 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const recettesBrutesFoncier = resolveFoncier(answers);
   if (recettesBrutesFoncier > MICRO_FONCIER_SEUIL_2025) {
     throw new UnsupportedSituationError(
-      "Vos revenus fonciers dépassent 15 000 € par an pour le foyer : le régime réel s'applique alors obligatoirement (déduction des charges réelles), ce que cet outil ne prend pas encore en charge. Vérifiez votre déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+      "Tes revenus fonciers dépassent 15 000 € par an pour le foyer : le régime réel s'applique alors obligatoirement (déduction des charges réelles), ce que cet outil ne prend pas encore en charge. Vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
     );
   }
 
   const activiteVous = resolveActiviteIndependante(answers, "");
   if (activiteVous.type && activiteVous.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteVous.type].seuil) {
     throw new UnsupportedSituationError(
-      "Le chiffre d'affaires de votre activité de micro-entrepreneur dépasse le seuil du régime micro-entreprise pour ce type d'activité : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement, ce que cet outil ne prend pas encore en charge. Vérifiez votre déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+      "Le chiffre d'affaires de ton activité de micro-entrepreneur dépasse le seuil du régime micro-entreprise pour ce type d'activité : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement, ce que cet outil ne prend pas encore en charge. Vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
     );
   }
   const activiteConjoint = isCouple ? resolveActiviteIndependante(answers, "-conjoint") : { type: undefined, chiffreAffaires: 0 };
@@ -339,7 +339,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     activiteConjoint.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteConjoint.type].seuil
   ) {
     throw new UnsupportedSituationError(
-      "Le chiffre d'affaires de l'activité de micro-entrepreneur de votre conjoint·e dépasse le seuil du régime micro-entreprise pour ce type d'activité : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement, ce que cet outil ne prend pas encore en charge. Vérifiez votre déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+      "Le chiffre d'affaires de l'activité de micro-entrepreneur de ton/ta conjoint·e dépasse le seuil du régime micro-entreprise pour ce type d'activité : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement, ce que cet outil ne prend pas encore en charge. Vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
     );
   }
 
@@ -392,12 +392,12 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     {
       code: vous.isEstimate ? undefined : "1AJ",
       label: vous.isEstimate
-        ? "Salaire net imposable estimé (vous)"
-        : "Salaire net imposable à déclarer (vous)",
+        ? "Salaire net imposable estimé (toi)"
+        : "Salaire net imposable à déclarer (toi)",
       value: vous.netImposable,
       explanation: vous.isEstimate
-        ? "Estimation calculée à partir de votre salaire brut annuel (environ 80% du brut), à confirmer avec votre fiche de paie de décembre avant de déclarer."
-        : "C'est le montant « Net imposable » indiqué sur votre bulletin de salaire de décembre 2025 (cumul annuel), à reporter dans la case 1AJ.",
+        ? "Estimation calculée à partir de ton salaire brut annuel (environ 80% du brut) — à confirmer avec ta fiche de paie de décembre avant de déclarer."
+        : "C'est le montant « Net imposable » indiqué sur ton bulletin de salaire de décembre 2025 (cumul annuel), à reporter dans la case 1AJ.",
       source: "impots.gouv.fr — Salaires et assimilés",
     },
   ];
@@ -405,10 +405,10 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   if (chomageDeclare) {
     lines.push({
       code: "1AP",
-      label: "Allocations chômage à déclarer (vous)",
+      label: "Allocations chômage à déclarer (toi)",
       value: chomageVous,
       explanation:
-        "C'est le montant imposable indiqué sur votre attestation fiscale annuelle de France Travail, à reporter dans la case 1AP.",
+        "C'est le montant imposable indiqué sur ton attestation fiscale annuelle de France Travail, à reporter dans la case 1AP.",
       source: "impots.gouv.fr — Autres revenus imposables ; BOFiP BOI-RSA-BASE-30-50-20",
     });
   }
@@ -421,8 +421,8 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
         : "Salaire net imposable à déclarer (conjoint·e)",
       value: conjoint.netImposable,
       explanation: conjoint.isEstimate
-        ? "Estimation calculée à partir du salaire brut annuel de votre conjoint·e (environ 80% du brut), à confirmer avec sa fiche de paie de décembre avant de déclarer."
-        : "C'est le montant « Net imposable » indiqué sur le bulletin de salaire de décembre 2025 de votre conjoint·e (cumul annuel), à reporter dans la case 1BJ.",
+        ? "Estimation calculée à partir du salaire brut annuel de ton/ta conjoint·e (environ 80% du brut) — à confirmer avec sa fiche de paie de décembre avant de déclarer."
+        : "C'est le montant « Net imposable » indiqué sur le bulletin de salaire de décembre 2025 de ton/ta conjoint·e (cumul annuel), à reporter dans la case 1BJ.",
       source: "impots.gouv.fr — Salaires et assimilés",
     });
   }
@@ -433,7 +433,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       label: "Allocations chômage à déclarer (conjoint·e)",
       value: chomageConjoint,
       explanation:
-        "C'est le montant imposable indiqué sur l'attestation fiscale annuelle de France Travail de votre conjoint·e, à reporter dans la case 1BP.",
+        "C'est le montant imposable indiqué sur l'attestation fiscale annuelle de France Travail de ton/ta conjoint·e, à reporter dans la case 1BP.",
       source: "impots.gouv.fr — Autres revenus imposables ; BOFiP BOI-RSA-BASE-30-50-20",
     });
   }
@@ -441,10 +441,10 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   if (pensionDeclare) {
     lines.push({
       code: "1AS",
-      label: "Pension de retraite à déclarer (vous)",
+      label: "Pension de retraite à déclarer (toi)",
       value: pensionVous,
       explanation:
-        "C'est le montant brut de votre pension, avant abattement, à reporter dans la case 1AS.",
+        "C'est le montant brut de ta pension, avant abattement, à reporter dans la case 1AS.",
       source: "impots.gouv.fr — Pensions de retraite ; CGI art. 158, 5°, a",
     });
   }
@@ -455,7 +455,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       label: "Pension de retraite à déclarer (conjoint·e)",
       value: pensionConjoint,
       explanation:
-        "C'est le montant brut de la pension de votre conjoint·e, avant abattement, à reporter dans la case 1BS.",
+        "C'est le montant brut de la pension de ton/ta conjoint·e, avant abattement, à reporter dans la case 1BS.",
       source: "impots.gouv.fr — Pensions de retraite ; CGI art. 158, 5°, a",
     });
   }
@@ -466,7 +466,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       label: "Revenus fonciers bruts à déclarer (location non meublée)",
       value: recettesBrutesFoncier,
       explanation:
-        "C'est le montant brut des loyers perçus par le foyer, hors charges et avant abattement, à reporter dans la case 4BE.",
+        "C'est le montant brut des loyers perçus par ton foyer, hors charges et avant abattement, à reporter dans la case 4BE.",
       source: "impots.gouv.fr — Revenus fonciers ; CGI art. 32 (régime micro-foncier)",
     });
   }
@@ -475,9 +475,9 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     const info = MICRO_ACTIVITE_INFO[activiteVous.type];
     lines.push({
       code: info.codeVous,
-      label: `Chiffre d'affaires à déclarer (vous) — ${info.libelle}`,
+      label: `Chiffre d'affaires à déclarer (toi) — ${info.libelle}`,
       value: activiteVous.chiffreAffaires,
-      explanation: `C'est le montant brut total encaissé pour votre activité de micro-entrepreneur (${info.libelle}), avant abattement, à reporter dans la case ${info.codeVous}.`,
+      explanation: `C'est le montant brut total encaissé pour ton activité de micro-entrepreneur (${info.libelle}), avant abattement, à reporter dans la case ${info.codeVous}.`,
       source: "impots.gouv.fr — Revenus des professions non salariées ; CGI art. 50-0 / 102 ter (régime micro-entreprise)",
     });
   }
@@ -488,7 +488,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       code: info.codeConjoint,
       label: `Chiffre d'affaires à déclarer (conjoint·e) — ${info.libelle}`,
       value: activiteConjoint.chiffreAffaires,
-      explanation: `C'est le montant brut total encaissé pour l'activité de micro-entrepreneur de votre conjoint·e (${info.libelle}), avant abattement, à reporter dans la case ${info.codeConjoint}.`,
+      explanation: `C'est le montant brut total encaissé pour l'activité de micro-entrepreneur de ton/ta conjoint·e (${info.libelle}), avant abattement, à reporter dans la case ${info.codeConjoint}.`,
       source: "impots.gouv.fr — Revenus des professions non salariées ; CGI art. 50-0 / 102 ter (régime micro-entreprise)",
     });
   }
@@ -506,7 +506,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       label: "Revenu imposable retenu pour le foyer, pensions et retraites, après abattement de 10%",
       value: taxableIncomePensions,
       explanation:
-        "L'administration applique un abattement de 10% distinct de celui des salaires sur l'ensemble des pensions du foyer (au moins 454€ par pensionné, mais 4 439€ au maximum pour tout le foyer, même si vous êtes deux à percevoir une pension).",
+        "L'administration applique un abattement de 10% distinct de celui des salaires sur l'ensemble des pensions du foyer (au moins 454€ par pensionné, mais 4 439€ au maximum pour tout le foyer, même quand les deux membres du couple touchent une pension).",
       source: "CGI art. 158, 5°, a",
     });
   }
@@ -524,9 +524,9 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   if (activiteVous.type) {
     const info = MICRO_ACTIVITE_INFO[activiteVous.type];
     lines.push({
-      label: `Revenu imposable retenu (vous), après abattement forfaitaire de ${Math.round(info.taux * 100)}% (activité indépendante)`,
+      label: `Revenu imposable retenu (toi), après abattement forfaitaire de ${Math.round(info.taux * 100)}% (activité indépendante)`,
       value: taxableIncomeActiviteVous,
-      explanation: `L'administration applique automatiquement un abattement forfaitaire de ${Math.round(info.taux * 100)}% sur votre chiffre d'affaires (${info.libelle}), sans justificatif — au moins 305€.`,
+      explanation: `L'administration applique automatiquement un abattement forfaitaire de ${Math.round(info.taux * 100)}% sur ton chiffre d'affaires (${info.libelle}), sans justificatif — au moins 305€.`,
       source: "CGI art. 50-0 / 102 ter",
     });
   }
@@ -536,7 +536,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     lines.push({
       label: `Revenu imposable retenu (conjoint·e), après abattement forfaitaire de ${Math.round(info.taux * 100)}% (activité indépendante)`,
       value: taxableIncomeActiviteConjoint,
-      explanation: `L'administration applique automatiquement un abattement forfaitaire de ${Math.round(info.taux * 100)}% sur le chiffre d'affaires de votre conjoint·e (${info.libelle}), sans justificatif — au moins 305€.`,
+      explanation: `L'administration applique automatiquement un abattement forfaitaire de ${Math.round(info.taux * 100)}% sur le chiffre d'affaires de ton/ta conjoint·e (${info.libelle}), sans justificatif — au moins 305€.`,
       source: "CGI art. 50-0 / 102 ter",
     });
   }
@@ -545,7 +545,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     {
       label: "Impôt sur le revenu (avant réductions et crédits d'impôt éventuels)",
       value: tax,
-      explanation: `Calculé par tranches selon le barème progressif applicable aux revenus 2025, en tenant compte de votre quotient familial (${formatParts(parts)} part${parts > 1 ? "s" : ""}) et de la décote pour les revenus modestes.`,
+      explanation: `Calculé par tranches selon le barème progressif applicable aux revenus 2025, en tenant compte de ton quotient familial (${formatParts(parts)} part${parts > 1 ? "s" : ""}) et de la décote pour les revenus modestes.`,
       source: "CGI art. 194 et 197",
     },
   );
@@ -553,12 +553,12 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const warnings: string[] = [];
   if (vous.isEstimate || conjoint.isEstimate) {
     warnings.push(
-      "Au moins un montant de salaire net imposable utilisé ici est une estimation basée sur un salaire brut, pas un montant exact. Confirmez-le avec la fiche de paie de décembre avant de déclarer.",
+      "Au moins un montant de salaire net imposable utilisé ici est une estimation basée sur un salaire brut, pas un montant exact. Confirme-le avec la fiche de paie de décembre avant de déclarer.",
     );
   }
   if (isCapped) {
     warnings.push(
-      "L'avantage fiscal lié à vos parts supplémentaires (enfants à charge) a été plafonné par la loi : au-delà d'un certain montant par demi-part, la réduction d'impôt n'augmente plus.",
+      "L'avantage fiscal lié à tes parts supplémentaires (enfants à charge) a été plafonné par la loi : au-delà d'un certain montant par demi-part, la réduction d'impôt n'augmente plus.",
     );
   }
 
@@ -578,7 +578,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     // foyer plutôt que de calculer un taux individualisé potentiellement faux.
     tauxPrelevementSource = { foyer: tauxFoyer };
     warnings.push(
-      "Le taux individualisé par conjoint n'est pas calculé ici car vos revenus fonciers sont communs au foyer : seul le taux foyer ci-dessous est indiqué. Consultez votre espace impots.gouv.fr pour le détail par conjoint.",
+      "Le taux individualisé par conjoint n'est pas calculé ici car tes revenus fonciers sont communs au foyer : seul le taux foyer ci-dessous est indiqué. Consulte ton espace impots.gouv.fr pour le détail par conjoint.",
     );
   } else if (isCouple) {
     const taxableIncomeVousSeul =

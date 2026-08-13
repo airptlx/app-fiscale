@@ -10,10 +10,10 @@ export function ResultRecapCases({ lines }: { lines: DeclarationLine[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold">Cases à vérifier sur votre déclaration</h2>
+      <h2 className="text-base font-semibold">Cases à vérifier sur ta déclaration</h2>
       <p className="text-sm text-muted-foreground">
-        Gardez ce récapitulatif sous les yeux pendant que vous remplissez votre déclaration réelle
-        sur impots.gouv.fr, et vérifiez que chaque case correspond.
+        Garde ce récapitulatif sous les yeux pendant que tu remplis ta déclaration réelle sur
+        impots.gouv.fr, et vérifie que chaque case correspond.
       </p>
       <div className="overflow-x-auto rounded-xl border">
         <table className="w-full text-sm">
@@ -31,7 +31,7 @@ export function ResultRecapCases({ lines }: { lines: DeclarationLine[] }) {
                     {line.code}
                   </span>
                 </td>
-                <td className="px-4 py-2 text-right font-heading">{formatEuros(line.value)}</td>
+                <td className="px-4 py-2 text-right font-mono tabular-nums">{formatEuros(line.value)}</td>
               </tr>
             ))}
           </tbody>

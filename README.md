@@ -1,6 +1,6 @@
-# Assistant Déclaration d'Impôts
+# décla
 
-Un questionnaire simple, sans jargon fiscal, pour savoir précisément quoi remplir sur sa déclaration de revenus française : lignes à compléter, taux de prélèvement à la source, crédits et déductions à ne pas manquer.
+Ta déclaration, sans le jargon. Un questionnaire simple pour savoir précisément quoi remplir sur sa déclaration de revenus française : lignes à compléter, taux de prélèvement à la source, crédits et déductions à ne pas manquer.
 
 > ⚠️ **Avertissement** : ceci est un outil informationnel personnel, pas un service certifié. Vérifiez toujours vos réponses sur [impots.gouv.fr](https://www.impots.gouv.fr) ou auprès d'un professionnel avant de déclarer.
 

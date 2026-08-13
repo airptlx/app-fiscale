@@ -2,25 +2,25 @@ import type { Metadata } from "next";
 import { ClearDataButton } from "@/components/clear-data-button";
 
 export const metadata: Metadata = {
-  title: "À propos — Assistant Déclaration d'Impôts",
+  title: "À propos",
 };
 
 export default function AProposPage() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">À propos et avertissement</h1>
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-10">
+      <h1 className="font-heading text-3xl font-black tracking-tight">À propos et avertissement</h1>
 
       <div className="flex flex-col gap-4 text-sm leading-relaxed text-card-foreground">
         <p>
-          Cet outil vous aide à comprendre ce que vous devez inscrire sur votre déclaration de
-          revenus française, en répondant à des questions simples plutôt qu&apos;en vous
-          demandant de connaître le vocabulaire administratif.
+          décla t&apos;aide à comprendre ce que tu dois inscrire sur ta déclaration de revenus
+          française, en te posant des questions simples plutôt qu&apos;en te demandant de
+          connaître le vocabulaire administratif.
         </p>
         <p>
           <strong>Ce n&apos;est pas un service certifié.</strong> Les calculs se basent sur les
           règles fiscales officielles (Code général des impôts, BOFiP) en vigueur pour les revenus
           2025, mais ce document ne constitue pas une déclaration et n&apos;engage pas
-          l&apos;administration fiscale. Vérifiez toujours vos réponses sur{" "}
+          l&apos;administration fiscale. Vérifie toujours tes réponses sur{" "}
           <a href="https://www.impots.gouv.fr" className="underline underline-offset-2">
             impots.gouv.fr
           </a>{" "}
@@ -36,13 +36,13 @@ export default function AProposPage() {
           Les situations de parent isolé, divorce, veuvage ou union libre avec garde partagée, les
           revenus fonciers au-delà de ce seuil, ainsi que les revenus d&apos;indépendants au régime
           réel ou avec un chiffre d&apos;affaires dépassant le seuil du régime micro-entreprise, ne
-          sont pas encore pris en charge. D&apos;autres situations seront ajoutées progressivement.
+          sont pas encore pris en charge. D&apos;autres situations arrivent progressivement.
         </p>
         <p>
-          <strong>Confidentialité :</strong> cette application fonctionne entièrement dans votre
+          <strong>Confidentialité :</strong> cette application fonctionne entièrement dans ton
           navigateur. Il n&apos;y a pas de serveur, pas de compte, aucune donnée n&apos;est
-          envoyée où que ce soit. Vos réponses sont uniquement conservées sur cet appareil
-          (stockage local du navigateur), pour vous permettre de reprendre là où vous vous étiez
+          envoyée où que ce soit. Tes réponses sont uniquement conservées sur cet appareil
+          (stockage local du navigateur), pour te permettre de reprendre là où tu t&apos;étais
           arrêté·e.
         </p>
       </div>

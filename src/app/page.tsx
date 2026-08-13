@@ -21,26 +21,27 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-10">
       <div className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold tracking-tight">Assistant Déclaration d&apos;Impôts</h1>
+        <h1 className="font-heading text-4xl font-black tracking-tight text-balance">
+          Ta déclaration, sans le jargon.
+        </h1>
         <p className="text-lg text-muted-foreground">
-          Répondez à quelques questions simples, sans jargon fiscal, et obtenez une liste claire
-          de ce qu&apos;il faut inscrire sur votre déclaration de revenus.
+          Réponds à quelques questions toutes simples — promis, zéro jargon — et on te dit
+          exactement quoi écrire sur ta déclaration, et pourquoi.
         </p>
       </div>
 
       <div className="rounded-xl border bg-card p-4 text-sm text-card-foreground">
-        <h2 className="mb-2 font-semibold">Avertissement</h2>
+        <h2 className="mb-2 font-semibold">Avant de commencer</h2>
         <p>
-          Cet outil est informationnel et personnel. Ce n&apos;est pas un service certifié ni un
-          substitut à un conseil professionnel. Vérifiez toujours vos réponses sur{" "}
+          On n&apos;est pas un service certifié, juste un outil qui t&apos;aide à y voir clair.
+          Vérifie toujours tes réponses sur{" "}
           <a href="https://www.impots.gouv.fr" className="underline underline-offset-2">
             impots.gouv.fr
           </a>{" "}
-          ou auprès d&apos;un professionnel avant de déclarer réellement. Aucune donnée que vous
-          saisissez ne quitte votre navigateur : il n&apos;y a pas de serveur, pas de compte, pas
-          de suivi.
+          (ou avec un pro) avant d&apos;envoyer ta vraie déclaration. Et promis : rien de ce que tu
+          tapes ne quitte ton navigateur — pas de serveur, pas de compte, pas de mouchard.
         </p>
       </div>
 
@@ -62,10 +63,10 @@ export default function Home() {
           aria-describedby="disclaimer-hint"
           onClick={() => router.push("/questionnaire")}
         >
-          {hasSavedAnswers ? "Reprendre" : "Commencer"}
+          {hasSavedAnswers ? "Je reprends" : "C'est parti"}
         </Button>
         <p id="disclaimer-hint" className="mt-2 text-sm text-muted-foreground">
-          Cochez la case ci-dessus pour continuer.
+          Coche la case ci-dessus pour continuer.
         </p>
       </div>
     </main>

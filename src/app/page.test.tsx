@@ -14,11 +14,11 @@ describe("Home", () => {
     push.mockClear();
   });
 
-  it("disables Commencer until the disclaimer checkbox is checked, then navigates on click", async () => {
+  it("disables C'est parti until the disclaimer checkbox is checked, then navigates on click", async () => {
     const user = userEvent.setup();
     render(<Home />);
 
-    const button = await screen.findByRole("button", { name: "Commencer" });
+    const button = await screen.findByRole("button", { name: "C'est parti" });
     expect(button).toBeDisabled();
 
     const checkbox = screen.getByRole("checkbox");

@@ -2,14 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Assistant Déclaration d'Impôts",
-    short_name: "Impôts Simplifiés",
+    name: "décla — ta déclaration, sans le jargon",
+    short_name: "décla",
     description:
-      "Un questionnaire simple, sans jargon, pour savoir précisément quoi remplir sur votre déclaration de revenus française.",
+      "Réponds à quelques questions toutes simples, sans jargon fiscal, et sais exactement quoi écrire sur ta déclaration de revenus.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#0f172a",
+    background_color: "#F1F3EC",
+    theme_color: "#1E7A54",
     lang: "fr",
     icons: [
       {
