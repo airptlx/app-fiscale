@@ -90,3 +90,27 @@ export const PENSION_ABATTEMENT_PLAFOND_2025 = 4_439;
  * Récupéré le 2026-08-13.
  */
 export const MICRO_FONCIER_SEUIL_2025 = 15_000;
+
+/**
+ * Régime micro-entreprise (micro-BIC/micro-BNC), revenus 2025 (seuils applicables
+ * pour les revenus 2023 à 2025 — un nouveau palier s'applique aux revenus 2026-2028,
+ * cf. page datée impots.gouv.fr ci-dessous ; à ne pas confondre avec le texte de
+ * loi actuellement en vigueur sur Légifrance qui affiche déjà les seuils 2026-2028).
+ * Trois catégories, taux d'abattement distincts, plancher commun de 305€ :
+ * - vente de marchandises/produits (BIC) : abattement 71%, seuil 188 700€.
+ * - prestation de service (BIC) : abattement 50%, seuil 77 700€.
+ * - activité libérale (BNC) : abattement 34%, seuil 77 700€ (même seuil que service).
+ * Au-delà du seuil, passage obligatoire au régime réel (BIC) ou à la déclaration
+ * contrôlée (BNC) — hors scope, `UnsupportedSituationError`.
+ * Base légale : CGI art. 50-0 (micro-BIC) et art. 102 ter (micro-BNC).
+ * https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000042159220 (micro-BIC)
+ * https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000047622381 (micro-BNC)
+ * Seuils 2023-2025 : https://www.impots.gouv.fr/professionnel/questions/pour-rester-micro-entrepreneur-quel-montant-de-chiffre-daffaires-ou-de
+ * Récupéré le 2026-08-13.
+ */
+export const MICRO_BIC_VENTE_TAUX_2025 = 0.71;
+export const MICRO_BIC_SERVICE_TAUX_2025 = 0.5;
+export const MICRO_BNC_TAUX_2025 = 0.34;
+export const MICRO_ABATTEMENT_PLANCHER_2025 = 305;
+export const MICRO_SEUIL_VENTE_2025 = 188_700;
+export const MICRO_SEUIL_SERVICE_2025 = 77_700;

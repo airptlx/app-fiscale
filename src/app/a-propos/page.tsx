@@ -29,12 +29,14 @@ export default function AProposPage() {
         <p>
           Sont actuellement prises en charge : une personne célibataire sans personne à charge, ou
           un couple marié/pacsé avec ou sans enfants à charge, avec un ou deux salaires et,
-          éventuellement, des allocations chômage (France Travail), une pension de retraite et/ou
-          des revenus fonciers (location non meublée, jusqu&apos;à 15 000€ de loyers bruts par an
-          pour le foyer). Les situations de parent isolé, divorce, veuvage ou union libre avec
-          garde partagée, les revenus fonciers au-delà de ce seuil, ainsi que les revenus
-          d&apos;indépendants, ne sont pas encore pris en charge. D&apos;autres situations seront
-          ajoutées progressivement.
+          éventuellement, des allocations chômage (France Travail), une pension de retraite, des
+          revenus fonciers (location non meublée, jusqu&apos;à 15 000€ de loyers bruts par an pour
+          le foyer) et/ou une activité de micro-entrepreneur (auto-entrepreneur, une seule activité
+          par déclarant : vente de marchandises, prestation de service ou activité libérale).
+          Les situations de parent isolé, divorce, veuvage ou union libre avec garde partagée, les
+          revenus fonciers au-delà de ce seuil, ainsi que les revenus d&apos;indépendants au régime
+          réel ou avec un chiffre d&apos;affaires dépassant le seuil du régime micro-entreprise, ne
+          sont pas encore pris en charge. D&apos;autres situations seront ajoutées progressivement.
         </p>
         <p>
           <strong>Confidentialité :</strong> cette application fonctionne entièrement dans votre

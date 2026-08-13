@@ -3,12 +3,14 @@ import { UnsupportedSituationError } from "../errors";
 import {
   computeDeclaration,
   computeFoncierTaxableIncome,
+  computeMicroTaxableIncome,
   computeParts,
   computePensionTaxableIncome,
   computeProgressiveTax,
   computeTauxPrelevementSourceFoyer,
   computeTauxPrelevementSourceIndividualise,
   computeTaxableIncome,
+  resolveActiviteIndependante,
   resolveChomage,
   resolveFoncier,
   resolvePension,
@@ -668,5 +670,188 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
     );
     expect(result.tauxPrelevementSource.vous).toBeDefined();
     expect(result.tauxPrelevementSource.conjoint).toBeDefined();
+  });
+});
+
+describe("resolveActiviteIndependante", () => {
+  it("is undefined/0 when not declared", () => {
+    expect(resolveActiviteIndependante({})).toEqual({ type: undefined, chiffreAffaires: 0 });
+    expect(
+      resolveActiviteIndependante({
+        "activite-independante": false,
+        "chiffre-affaires-independant-2025": 10_000,
+      }),
+    ).toEqual({ type: undefined, chiffreAffaires: 0 });
+  });
+
+  it("reads the declared type and amount when declared", () => {
+    expect(
+      resolveActiviteIndependante({
+        "activite-independante": true,
+        "type-activite-independante": "vente",
+        "chiffre-affaires-independant-2025": 10_000,
+      }),
+    ).toEqual({ type: "vente", chiffreAffaires: 10_000 });
+  });
+
+  it("supports the conjoint suffix independently", () => {
+    expect(
+      resolveActiviteIndependante(
+        {
+          "activite-independante-conjoint": true,
+          "type-activite-independante-conjoint": "liberale",
+          "chiffre-affaires-independant-2025-conjoint": 15_000,
+        },
+        "-conjoint",
+      ),
+    ).toEqual({ type: "liberale", chiffreAffaires: 15_000 });
+  });
+});
+
+describe("computeMicroTaxableIncome (CGI art. 50-0 / 102 ter — régime micro-BIC/micro-BNC)", () => {
+  it("is 0 when there is no chiffre d'affaires", () => {
+    expect(computeMicroTaxableIncome(0, "vente")).toBe(0);
+  });
+
+  it("applies a plain 71% abattement for vente (ventes de marchandises)", () => {
+    expect(computeMicroTaxableIncome(10_000, "vente")).toBe(2_900);
+  });
+
+  it("applies a plain 50% abattement for service (prestation de service)", () => {
+    expect(computeMicroTaxableIncome(10_000, "service")).toBe(5_000);
+  });
+
+  it("applies a plain 34% abattement for liberale (activité libérale)", () => {
+    expect(computeMicroTaxableIncome(10_000, "liberale")).toBe(6_600);
+  });
+
+  it("applies the 305€ floor when the percentage abattement would be lower", () => {
+    // 34% de 800 = 272 < 305 -> abattement = 305
+    expect(computeMicroTaxableIncome(800, "liberale")).toBe(800 - 305);
+  });
+
+  it("never exceeds the chiffre d'affaires itself (abattement capped)", () => {
+    // 34% de 200 = 68 < 305, mais le CA lui-même (200) < 305 -> abattement plafonné à 200
+    expect(computeMicroTaxableIncome(200, "liberale")).toBe(0);
+  });
+});
+
+describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-BNC)", () => {
+  it("adds a 5KO line and a separate taxable-income line (célibataire, salaire + vente)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "activite-independante": true,
+        "type-activite-independante": "vente",
+        "chiffre-affaires-independant-2025": 10_000,
+      },
+      2025,
+    );
+    const codes = result.lines.map((l) => l.code);
+    expect(codes).toEqual(["1AJ", "5KO", undefined, undefined, undefined]);
+    const caLine = result.lines.find((l) => l.code === "5KO");
+    expect(caLine).toEqual(expect.objectContaining({ value: 10_000 }));
+    // Ligne "activité indépendante" séparée : 10 000 - 71% = 2 900.
+    const activiteTaxableLine = result.lines[3];
+    expect(activiteTaxableLine).toEqual(expect.objectContaining({ value: 2_900 }));
+  });
+
+  it("uses 5KP for a service activity and 5HQ for a libérale activity", () => {
+    const service = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "activite-independante": true,
+        "type-activite-independante": "service",
+        "chiffre-affaires-independant-2025": 10_000,
+      },
+      2025,
+    );
+    expect(service.lines.map((l) => l.code)).toContain("5KP");
+
+    const liberale = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "activite-independante": true,
+        "type-activite-independante": "liberale",
+        "chiffre-affaires-independant-2025": 10_000,
+      },
+      2025,
+    );
+    expect(liberale.lines.map((l) => l.code)).toContain("5HQ");
+  });
+
+  it("throws UnsupportedSituationError when the chiffre d'affaires exceeds the seuil for the activity type", () => {
+    expect(() =>
+      computeDeclaration(
+        {
+          "situation-conjugale": "celibataire",
+          "fiche-paie-disponible": true,
+          "salaire-net-imposable-2025": 20_000,
+          "activite-independante": true,
+          "type-activite-independante": "service",
+          "chiffre-affaires-independant-2025": 77_701,
+        },
+        2025,
+      ),
+    ).toThrow(UnsupportedSituationError);
+  });
+
+  it("does not throw exactly at the seuil", () => {
+    expect(() =>
+      computeDeclaration(
+        {
+          "situation-conjugale": "celibataire",
+          "fiche-paie-disponible": true,
+          "salaire-net-imposable-2025": 20_000,
+          "activite-independante": true,
+          "type-activite-independante": "vente",
+          "chiffre-affaires-independant-2025": 188_700,
+        },
+        2025,
+      ),
+    ).not.toThrow();
+  });
+
+  it("handles a couple with different activities per declarant (vous vente, conjoint libérale), and still computes individualised PAS rates", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 0,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "conjoint-a-un-salaire": false,
+        "activite-independante": true,
+        "type-activite-independante": "vente",
+        "chiffre-affaires-independant-2025": 10_000,
+        "activite-independante-conjoint": true,
+        "type-activite-independante-conjoint": "liberale",
+        "chiffre-affaires-independant-2025-conjoint": 15_000,
+      },
+      2025,
+    );
+    const codes = result.lines.map((l) => l.code);
+    expect(codes).toContain("5KO");
+    expect(codes).toContain("5IQ");
+    expect(result.tauxPrelevementSource.vous).toBeDefined();
+    expect(result.tauxPrelevementSource.conjoint).toBeDefined();
+  });
+
+  it("does not add activité indépendante lines when not declared (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.lines.map((l) => l.code)).toEqual(["1AJ", undefined, undefined]);
+    expect(result.lines).toHaveLength(3);
   });
 });

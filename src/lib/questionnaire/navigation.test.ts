@@ -24,10 +24,10 @@ describe("getVisibleQuestions", () => {
     ]);
   });
 
-  it("reveals fiche-paie-disponible, chomage, pension and foncier directly for a célibataire (no children question)", () => {
-    // chomage, pension et foncier ne dépendent que de situation-conjugale
-    // (comme fiche-paie-disponible), donc visibles dès ce stade même si posées
-    // plus tard dans l'ordre du tableau.
+  it("reveals fiche-paie-disponible, chomage, pension, foncier and activite-independante directly for a célibataire (no children question)", () => {
+    // chomage, pension, foncier et activite-independante ne dépendent que de
+    // situation-conjugale (comme fiche-paie-disponible), donc visibles dès ce
+    // stade même si posées plus tard dans l'ordre du tableau.
     const answers: Answers = { "situation-conjugale": "celibataire" };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
@@ -35,12 +35,14 @@ describe("getVisibleQuestions", () => {
       "chomage",
       "pension",
       "foncier",
+      "activite-independante",
     ]);
   });
 
-  it("reveals nombre-enfants-a-charge, fiche-paie-disponible, chomage, pension, conjoint-a-un-salaire, chomage-conjoint, pension-conjoint and foncier for a couple", () => {
-    // conjoint-a-un-salaire, chomage-conjoint, pension-conjoint et foncier ne
-    // dépendent que de situation-conjugale : tous visibles dès ce stade.
+  it("reveals nombre-enfants-a-charge, fiche-paie-disponible, chomage, pension, conjoint-a-un-salaire, chomage-conjoint, pension-conjoint, foncier and both activite-independante questions for a couple", () => {
+    // conjoint-a-un-salaire, chomage-conjoint, pension-conjoint, foncier et les
+    // deux activite-independante ne dépendent que de situation-conjugale : tous
+    // visibles dès ce stade.
     const answers: Answers = { "situation-conjugale": "couple" };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
@@ -52,6 +54,8 @@ describe("getVisibleQuestions", () => {
       "chomage-conjoint",
       "pension-conjoint",
       "foncier",
+      "activite-independante",
+      "activite-independante-conjoint",
     ]);
   });
 
@@ -67,6 +71,7 @@ describe("getVisibleQuestions", () => {
       "chomage",
       "pension",
       "foncier",
+      "activite-independante",
     ]);
   });
 
@@ -82,6 +87,7 @@ describe("getVisibleQuestions", () => {
       "chomage",
       "pension",
       "foncier",
+      "activite-independante",
     ]);
   });
 
@@ -100,6 +106,7 @@ describe("getVisibleQuestions", () => {
       "montant-chomage-2025",
       "pension",
       "foncier",
+      "activite-independante",
     ]);
   });
 
@@ -129,6 +136,7 @@ describe("getVisibleQuestions", () => {
       "pension",
       "montant-pension-2025",
       "foncier",
+      "activite-independante",
     ]);
   });
 
@@ -159,6 +167,7 @@ describe("getVisibleQuestions", () => {
       "pension",
       "foncier",
       "montant-foncier-2025",
+      "activite-independante",
     ]);
   });
 
@@ -190,6 +199,8 @@ describe("getVisibleQuestions", () => {
       "chomage-conjoint",
       "pension-conjoint",
       "foncier",
+      "activite-independante",
+      "activite-independante-conjoint",
     ]);
   });
 
@@ -212,6 +223,8 @@ describe("getVisibleQuestions", () => {
       "chomage-conjoint",
       "pension-conjoint",
       "foncier",
+      "activite-independante",
+      "activite-independante-conjoint",
     ]);
   });
 
@@ -261,6 +274,8 @@ describe("getVisibleQuestions", () => {
       "chomage-conjoint",
       "pension-conjoint",
       "foncier",
+      "activite-independante",
+      "activite-independante-conjoint",
     ]);
   });
 });
@@ -274,7 +289,7 @@ describe("getNextQuestion", () => {
     expect(getNextQuestion(Q, { "situation-conjugale": "autre" })).toBeUndefined();
   });
 
-  it("walks the célibataire exact-path branch to completion, including chomage, pension and foncier", () => {
+  it("walks the célibataire exact-path branch to completion, including chomage, pension, foncier and activité indépendante", () => {
     let answers: Answers = {};
     answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
     expect(getNextQuestion(Q, answers)?.id).toBe("fiche-paie-disponible");
@@ -293,10 +308,16 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "foncier", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("montant-foncier-2025");
     answers = answerQuestion(Q, answers, "montant-foncier-2025", 6_000);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante");
+    answers = answerQuestion(Q, answers, "activite-independante", true);
+    expect(getNextQuestion(Q, answers)?.id).toBe("type-activite-independante");
+    answers = answerQuestion(Q, answers, "type-activite-independante", "vente");
+    expect(getNextQuestion(Q, answers)?.id).toBe("chiffre-affaires-independant-2025");
+    answers = answerQuestion(Q, answers, "chiffre-affaires-independant-2025", 10_000);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
-  it("walks the célibataire estimation branch to completion, skipping the amount questions when chomage/pension/foncier are false", () => {
+  it("walks the célibataire estimation branch to completion, skipping the amount questions when chomage/pension/foncier/activite-independante are false", () => {
     let answers: Answers = {};
     answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", false);
@@ -308,6 +329,8 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "pension", false);
     expect(getNextQuestion(Q, answers)?.id).toBe("foncier");
     answers = answerQuestion(Q, answers, "foncier", false);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante");
+    answers = answerQuestion(Q, answers, "activite-independante", false);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
@@ -330,6 +353,10 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "pension-conjoint", false);
     expect(getNextQuestion(Q, answers)?.id).toBe("foncier");
     answers = answerQuestion(Q, answers, "foncier", false);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante");
+    answers = answerQuestion(Q, answers, "activite-independante", false);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante-conjoint");
+    answers = answerQuestion(Q, answers, "activite-independante-conjoint", false);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
@@ -359,6 +386,18 @@ describe("getNextQuestion", () => {
     answers = answerQuestion(Q, answers, "foncier", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("montant-foncier-2025");
     answers = answerQuestion(Q, answers, "montant-foncier-2025", 6_000);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante");
+    answers = answerQuestion(Q, answers, "activite-independante", true);
+    expect(getNextQuestion(Q, answers)?.id).toBe("type-activite-independante");
+    answers = answerQuestion(Q, answers, "type-activite-independante", "service");
+    expect(getNextQuestion(Q, answers)?.id).toBe("chiffre-affaires-independant-2025");
+    answers = answerQuestion(Q, answers, "chiffre-affaires-independant-2025", 5_000);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante-conjoint");
+    answers = answerQuestion(Q, answers, "activite-independante-conjoint", true);
+    expect(getNextQuestion(Q, answers)?.id).toBe("type-activite-independante-conjoint");
+    answers = answerQuestion(Q, answers, "type-activite-independante-conjoint", "liberale");
+    expect(getNextQuestion(Q, answers)?.id).toBe("chiffre-affaires-independant-2025-conjoint");
+    answers = answerQuestion(Q, answers, "chiffre-affaires-independant-2025-conjoint", 3_000);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
@@ -584,7 +623,7 @@ describe("isQuestionnaireComplete", () => {
     expect(isQuestionnaireComplete(Q, { "situation-conjugale": "autre" })).toBe(true);
   });
 
-  it("is true once the célibataire exact-path branch, chomage/pension/foncier included, is fully answered", () => {
+  it("is true once the célibataire exact-path branch, chomage/pension/foncier/activite-independante included, is fully answered", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
       "fiche-paie-disponible": true,
@@ -592,11 +631,12 @@ describe("isQuestionnaireComplete", () => {
       chomage: false,
       pension: false,
       foncier: false,
+      "activite-independante": false,
     };
     expect(isQuestionnaireComplete(Q, answers)).toBe(true);
   });
 
-  it("is true once the couple branch (no conjoint salary), chomage/pension/foncier included, is fully answered", () => {
+  it("is true once the couple branch (no conjoint salary), chomage/pension/foncier/activite-independante included, is fully answered", () => {
     const answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 1,
@@ -608,6 +648,8 @@ describe("isQuestionnaireComplete", () => {
       "chomage-conjoint": false,
       "pension-conjoint": false,
       foncier: false,
+      "activite-independante": false,
+      "activite-independante-conjoint": false,
     };
     expect(isQuestionnaireComplete(Q, answers)).toBe(true);
   });
@@ -618,13 +660,13 @@ describe("getProgress", () => {
     expect(getProgress(Q, {}, "situation-conjugale")).toEqual({ position: 1, total: 1 });
   });
 
-  it("reports 2 of 9 on nombre-enfants-a-charge for a couple", () => {
-    // total = 9 dès ce stade : conjoint-a-un-salaire, chomage, pension,
-    // chomage-conjoint, pension-conjoint et foncier sont déjà visibles (ne
-    // dépendent que de situation-conjugale), même s'ils ne sont atteints
-    // qu'après dans l'ordre du tableau.
+  it("reports 2 of 11 on nombre-enfants-a-charge for a couple", () => {
+    // total = 11 dès ce stade : conjoint-a-un-salaire, chomage, pension,
+    // chomage-conjoint, pension-conjoint, foncier et les deux activite-
+    // independante sont déjà visibles (ne dépendent que de situation-
+    // conjugale), même s'ils ne sont atteints qu'après dans l'ordre du tableau.
     const answers: Answers = { "situation-conjugale": "couple" };
-    expect(getProgress(Q, answers, "nombre-enfants-a-charge")).toEqual({ position: 2, total: 9 });
+    expect(getProgress(Q, answers, "nombre-enfants-a-charge")).toEqual({ position: 2, total: 11 });
   });
 
   it("reports position = total when complete (currentQuestionId undefined)", () => {
@@ -633,6 +675,6 @@ describe("getProgress", () => {
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
     };
-    expect(getProgress(Q, answers, undefined)).toEqual({ position: 6, total: 6 });
+    expect(getProgress(Q, answers, undefined)).toEqual({ position: 7, total: 7 });
   });
 });

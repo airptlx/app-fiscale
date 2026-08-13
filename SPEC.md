@@ -4,7 +4,7 @@
 
 Remplir sa déclaration de revenus française est intimidant : vocabulaire administratif, dizaines de cases, règles qui changent chaque année. Cette application aide un particulier à savoir **précisément quoi écrire, sur quelle ligne, et pourquoi**, sans avoir à connaître le jargon fiscal au préalable.
 
-**Utilisateur cible (v1)** : salarié, résident fiscal français, situation courante (single income source, pas d'indépendant, pas de patrimoine complexe).
+**Utilisateur cible (v1)** : salarié ou micro-entrepreneur, résident fiscal français, situation courante (pas de patrimoine complexe).
 
 **Ce que l'app n'est pas** : un service de déclaration certifié ni un substitut à un conseil professionnel. C'est un outil informationnel personnel — voir la section Confidentialité & avertissement.
 
@@ -29,12 +29,12 @@ Exemple : au lieu de "Optez-vous pour l'abattement forfaitaire de 10% ou les fra
 - Frais professionnels : abattement 10% vs frais réels (question simple, calcul automatique du régime le plus avantageux).
 - Situation familiale : célibataire sans enfant, ou marié/pacsé avec ou sans enfants (quotient familial, plafonnement général, décote spécifique couple). Le régime « parent isolé » (célibataire avec enfant(s) à charge, demi-part majorée) est nuancé ci-dessous, en roadmap plutôt qu'en inclus direct.
 - Revenus fonciers, régime micro-foncier uniquement (location non meublée, recettes brutes ≤ 15 000€/an pour le foyer), case 4BE — abattement forfaitaire de 30%, sans plancher (CGI art. 32). Au-delà du seuil, le régime réel s'applique obligatoirement et reste hors scope (`UnsupportedSituationError`).
+- Revenus indépendants, régime micro-entreprise uniquement (micro-BIC/micro-BNC, une seule activité par déclarant), un ou deux déclarants — vente de marchandises (case 5KO/5LO, abattement 71%, seuil 188 700€/an), prestation de service (case 5KP/5LP, abattement 50%, seuil 77 700€/an) ou activité libérale (case 5HQ/5IQ, abattement 34%, seuil 77 700€/an), plancher d'abattement commun de 305€ (CGI art. 50-0 / 102 ter). Au-delà du seuil, le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique obligatoirement et reste hors scope (`UnsupportedSituationError`). Le versement libératoire de l'impôt sur le revenu (mécanisme optionnel) n'est pas pris en charge.
 - Taux de prélèvement à la source (PAS) : taux foyer et taux individualisé (défaut couples depuis le 01/09/2025), affichés sur l'écran de résultat avec explication (CGI art. 204 H). Le taux individualisé n'est pas calculé pour un couple ayant des revenus fonciers (revenu commun, formule non encore étendue aux revenus communs — seul le taux foyer est alors affiché, avec avertissement). La grille de taux neutre (cas d'un nouvel employeur sans taux encore transmis) répond à un besoin différent et n'est pas couverte.
 - 3 à 5 crédits/déductions courants : dons, frais de garde d'enfants, emploi à domicile, versements PER.
 - Écran de résultat : liste des lignes à remplir + explications + avertissement.
 
 **Roadmap « revenus annexes » (planifiée, incréments dédiés — voir plan incrément 4)** — chacun de ces points nécessite son propre cycle Plan Mode avant implémentation, distinct du cas traitements et salaires :
-- Revenus indépendants (micro-BIC/micro-BNC).
 - Célibataire avec enfant(s) à charge (« parent isolé », demi-part majorée et plafond spécifique — distinct du cas couple+enfants, cf. `docs/tax-rules-sources.md`).
 
 **Explicitement différé, hors roadmap actuelle :**

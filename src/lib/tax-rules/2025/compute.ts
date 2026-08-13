@@ -6,7 +6,13 @@ import {
   BAREME_2025,
   DECOTE_CELIBATAIRE_2025,
   DECOTE_COUPLE_2025,
+  MICRO_ABATTEMENT_PLANCHER_2025,
+  MICRO_BIC_SERVICE_TAUX_2025,
+  MICRO_BIC_VENTE_TAUX_2025,
+  MICRO_BNC_TAUX_2025,
   MICRO_FONCIER_SEUIL_2025,
+  MICRO_SEUIL_SERVICE_2025,
+  MICRO_SEUIL_VENTE_2025,
   PENSION_ABATTEMENT_PLAFOND_2025,
   PENSION_ABATTEMENT_PLANCHER_2025,
   PLAFOND_QUOTIENT_FAMILIAL_DEMI_PART_2025,
@@ -180,6 +186,74 @@ export function computeFoncierTaxableIncome(recettesBrutes: number): number {
   return Math.round(recettesBrutes * 0.7);
 }
 
+export type TypeActiviteIndependante = "vente" | "service" | "liberale";
+
+/**
+ * CGI art. 50-0 (micro-BIC) et art. 102 ter (micro-BNC) : taux d'abattement, seuil
+ * d'éligibilité et code de case (formulaire 2042-C-PRO, régime sans versement
+ * libératoire) par type d'activité et par déclarant.
+ */
+const MICRO_ACTIVITE_INFO: Record<
+  TypeActiviteIndependante,
+  { taux: number; seuil: number; codeVous: string; codeConjoint: string; libelle: string }
+> = {
+  vente: {
+    taux: MICRO_BIC_VENTE_TAUX_2025,
+    seuil: MICRO_SEUIL_VENTE_2025,
+    codeVous: "5KO",
+    codeConjoint: "5LO",
+    libelle: "vente de marchandises",
+  },
+  service: {
+    taux: MICRO_BIC_SERVICE_TAUX_2025,
+    seuil: MICRO_SEUIL_SERVICE_2025,
+    codeVous: "5KP",
+    codeConjoint: "5LP",
+    libelle: "prestation de service",
+  },
+  liberale: {
+    taux: MICRO_BNC_TAUX_2025,
+    seuil: MICRO_SEUIL_SERVICE_2025,
+    codeVous: "5HQ",
+    codeConjoint: "5IQ",
+    libelle: "activité libérale",
+  },
+};
+
+/**
+ * Une seule activité de micro-entrepreneur par déclarant (pas de cumul vente +
+ * service + libérale pour la même personne, cf. plan incrément 8). `suffix`
+ * distingue "vous" ("") du conjoint ("-conjoint").
+ */
+export function resolveActiviteIndependante(
+  answers: Answers,
+  suffix: "" | "-conjoint" = "",
+): { type: TypeActiviteIndependante | undefined; chiffreAffaires: number } {
+  if (answers[`activite-independante${suffix}`] !== true) {
+    return { type: undefined, chiffreAffaires: 0 };
+  }
+  const type = answers[`type-activite-independante${suffix}`] as TypeActiviteIndependante | undefined;
+  const chiffreAffaires = Number(answers[`chiffre-affaires-independant-2025${suffix}`] ?? 0);
+  return { type, chiffreAffaires };
+}
+
+/**
+ * CGI art. 50-0 / 102 ter : abattement forfaitaire selon le type d'activité,
+ * plancher de 305€ commun aux trois catégories, plafonné au chiffre d'affaires
+ * lui-même (comme `computeTaxableIncome` le fait pour le salaire).
+ */
+export function computeMicroTaxableIncome(
+  chiffreAffaires: number,
+  type: TypeActiviteIndependante,
+): number {
+  if (chiffreAffaires <= 0) return 0;
+  const abattement = Math.min(
+    Math.max(chiffreAffaires * MICRO_ACTIVITE_INFO[type].taux, MICRO_ABATTEMENT_PLANCHER_2025),
+    chiffreAffaires,
+  );
+  return Math.round(chiffreAffaires - abattement);
+}
+
 function formatParts(parts: number): string {
   return String(parts).replace(".", ",");
 }
@@ -253,6 +327,22 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     );
   }
 
+  const activiteVous = resolveActiviteIndependante(answers, "");
+  if (activiteVous.type && activiteVous.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteVous.type].seuil) {
+    throw new UnsupportedSituationError(
+      "Le chiffre d'affaires de votre activité de micro-entrepreneur dépasse le seuil du régime micro-entreprise pour ce type d'activité : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement, ce que cet outil ne prend pas encore en charge. Vérifiez votre déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+    );
+  }
+  const activiteConjoint = isCouple ? resolveActiviteIndependante(answers, "-conjoint") : { type: undefined, chiffreAffaires: 0 };
+  if (
+    activiteConjoint.type &&
+    activiteConjoint.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteConjoint.type].seuil
+  ) {
+    throw new UnsupportedSituationError(
+      "Le chiffre d'affaires de l'activité de micro-entrepreneur de votre conjoint·e dépasse le seuil du régime micro-entreprise pour ce type d'activité : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement, ce que cet outil ne prend pas encore en charge. Vérifiez votre déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+    );
+  }
+
   const vous = resolveNetImposable(answers, "");
   const conjointASalaire = isCouple && answers["conjoint-a-un-salaire"] === true;
   const conjoint = conjointASalaire
@@ -279,8 +369,20 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const foncierDeclare = answers["foncier"] === true;
   const taxableIncomeFoncier = computeFoncierTaxableIncome(recettesBrutesFoncier);
 
+  const taxableIncomeActiviteVous = activiteVous.type
+    ? computeMicroTaxableIncome(activiteVous.chiffreAffaires, activiteVous.type)
+    : 0;
+  const taxableIncomeActiviteConjoint = activiteConjoint.type
+    ? computeMicroTaxableIncome(activiteConjoint.chiffreAffaires, activiteConjoint.type)
+    : 0;
+
   const taxableIncome =
-    taxableIncomeVous + taxableIncomeConjoint + taxableIncomePensions + taxableIncomeFoncier;
+    taxableIncomeVous +
+    taxableIncomeConjoint +
+    taxableIncomePensions +
+    taxableIncomeFoncier +
+    taxableIncomeActiviteVous +
+    taxableIncomeActiviteConjoint;
 
   const parts = computeParts(answers);
   const { brutTax, isCapped } = computeQuotientFamilialTax(taxableIncome, parts, isCouple);
@@ -369,6 +471,28 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     });
   }
 
+  if (activiteVous.type) {
+    const info = MICRO_ACTIVITE_INFO[activiteVous.type];
+    lines.push({
+      code: info.codeVous,
+      label: `Chiffre d'affaires à déclarer (vous) — ${info.libelle}`,
+      value: activiteVous.chiffreAffaires,
+      explanation: `C'est le montant brut total encaissé pour votre activité de micro-entrepreneur (${info.libelle}), avant abattement, à reporter dans la case ${info.codeVous}.`,
+      source: "impots.gouv.fr — Revenus des professions non salariées ; CGI art. 50-0 / 102 ter (régime micro-entreprise)",
+    });
+  }
+
+  if (activiteConjoint.type) {
+    const info = MICRO_ACTIVITE_INFO[activiteConjoint.type];
+    lines.push({
+      code: info.codeConjoint,
+      label: `Chiffre d'affaires à déclarer (conjoint·e) — ${info.libelle}`,
+      value: activiteConjoint.chiffreAffaires,
+      explanation: `C'est le montant brut total encaissé pour l'activité de micro-entrepreneur de votre conjoint·e (${info.libelle}), avant abattement, à reporter dans la case ${info.codeConjoint}.`,
+      source: "impots.gouv.fr — Revenus des professions non salariées ; CGI art. 50-0 / 102 ter (régime micro-entreprise)",
+    });
+  }
+
   lines.push({
     label: "Revenu imposable retenu pour le foyer, après abattement de 10% pour frais professionnels",
     value: taxableIncomeVous + taxableIncomeConjoint,
@@ -397,6 +521,26 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     });
   }
 
+  if (activiteVous.type) {
+    const info = MICRO_ACTIVITE_INFO[activiteVous.type];
+    lines.push({
+      label: `Revenu imposable retenu (vous), après abattement forfaitaire de ${Math.round(info.taux * 100)}% (activité indépendante)`,
+      value: taxableIncomeActiviteVous,
+      explanation: `L'administration applique automatiquement un abattement forfaitaire de ${Math.round(info.taux * 100)}% sur votre chiffre d'affaires (${info.libelle}), sans justificatif — au moins 305€.`,
+      source: "CGI art. 50-0 / 102 ter",
+    });
+  }
+
+  if (activiteConjoint.type) {
+    const info = MICRO_ACTIVITE_INFO[activiteConjoint.type];
+    lines.push({
+      label: `Revenu imposable retenu (conjoint·e), après abattement forfaitaire de ${Math.round(info.taux * 100)}% (activité indépendante)`,
+      value: taxableIncomeActiviteConjoint,
+      explanation: `L'administration applique automatiquement un abattement forfaitaire de ${Math.round(info.taux * 100)}% sur le chiffre d'affaires de votre conjoint·e (${info.libelle}), sans justificatif — au moins 305€.`,
+      source: "CGI art. 50-0 / 102 ter",
+    });
+  }
+
   lines.push(
     {
       label: "Impôt sur le revenu (avant réductions et crédits d'impôt éventuels)",
@@ -418,8 +562,9 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     );
   }
 
-  const rawVous = vous.netImposable + chomageVous + pensionVous;
-  const rawConjoint = conjoint.netImposable + chomageConjoint + pensionConjoint;
+  const rawVous = vous.netImposable + chomageVous + pensionVous + activiteVous.chiffreAffaires;
+  const rawConjoint =
+    conjoint.netImposable + chomageConjoint + pensionConjoint + activiteConjoint.chiffreAffaires;
   const tauxFoyer = computeTauxPrelevementSourceFoyer(
     tax,
     rawVous + rawConjoint + recettesBrutesFoncier,
@@ -436,9 +581,12 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       "Le taux individualisé par conjoint n'est pas calculé ici car vos revenus fonciers sont communs au foyer : seul le taux foyer ci-dessous est indiqué. Consultez votre espace impots.gouv.fr pour le détail par conjoint.",
     );
   } else if (isCouple) {
-    const taxableIncomeVousSeul = taxableIncomeVous + computePensionTaxableIncome(pensionVous, 0);
+    const taxableIncomeVousSeul =
+      taxableIncomeVous + computePensionTaxableIncome(pensionVous, 0) + taxableIncomeActiviteVous;
     const taxableIncomeConjointSeul =
-      taxableIncomeConjoint + computePensionTaxableIncome(pensionConjoint, 0);
+      taxableIncomeConjoint +
+      computePensionTaxableIncome(pensionConjoint, 0) +
+      taxableIncomeActiviteConjoint;
     const individualise = computeTauxPrelevementSourceIndividualise(
       tax,
       rawVous,

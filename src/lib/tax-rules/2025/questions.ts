@@ -222,4 +222,96 @@ export const QUESTIONS_2025: Question[] = [
         ? undefined
         : "Merci d'indiquer un montant positif ou nul.",
   },
+  {
+    id: "activite-independante",
+    type: "boolean",
+    prompt: "Avez-vous une activité de micro-entrepreneur (auto-entrepreneur) en 2025 ?",
+    helpText:
+      "Cela concerne une activité indépendante enregistrée en micro-entreprise (auto-entrepreneur), pas un simple job ponctuel non déclaré.",
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "celibataire" ||
+      answers["situation-conjugale"] === "couple",
+  },
+  {
+    id: "type-activite-independante",
+    type: "single-choice",
+    prompt: "Quel est le type de cette activité ?",
+    options: [
+      {
+        value: "vente",
+        label: "Vente de marchandises ou de produits (commerce, artisanat de production, restauration à emporter...)",
+      },
+      {
+        value: "service",
+        label: "Une prestation de service artisanale ou commerciale (coiffure, réparation, conseil aux entreprises...)",
+      },
+      {
+        value: "liberale",
+        label: "Une activité libérale non commerciale (consulting, profession réglementée ou non...)",
+      },
+    ],
+    isVisible: (answers) =>
+      (answers["situation-conjugale"] === "celibataire" ||
+        answers["situation-conjugale"] === "couple") &&
+      answers["activite-independante"] === true,
+  },
+  {
+    id: "chiffre-affaires-independant-2025",
+    type: "number",
+    prompt: "Quel est le montant total de votre chiffre d'affaires encaissé pour cette activité en 2025 ?",
+    helpText:
+      "Montant brut total facturé et encaissé, avant tout abattement. Ne déduisez aucune charge vous-même : l'abattement forfaitaire est calculé automatiquement selon votre type d'activité.",
+    isVisible: (answers) =>
+      (answers["situation-conjugale"] === "celibataire" ||
+        answers["situation-conjugale"] === "couple") &&
+      answers["activite-independante"] === true,
+    validate: (value) =>
+      typeof value === "number" && value >= 0
+        ? undefined
+        : "Merci d'indiquer un montant positif ou nul.",
+  },
+  {
+    id: "activite-independante-conjoint",
+    type: "boolean",
+    prompt: "Votre conjoint·e a-t-il/elle aussi une activité de micro-entrepreneur (auto-entrepreneur) en 2025 ?",
+    helpText:
+      "Cela concerne une activité indépendante enregistrée en micro-entreprise (auto-entrepreneur), pas un simple job ponctuel non déclaré.",
+    isVisible: (answers) => answers["situation-conjugale"] === "couple",
+  },
+  {
+    id: "type-activite-independante-conjoint",
+    type: "single-choice",
+    prompt: "Quel est le type de cette activité (conjoint·e) ?",
+    options: [
+      {
+        value: "vente",
+        label: "Vente de marchandises ou de produits (commerce, artisanat de production, restauration à emporter...)",
+      },
+      {
+        value: "service",
+        label: "Une prestation de service artisanale ou commerciale (coiffure, réparation, conseil aux entreprises...)",
+      },
+      {
+        value: "liberale",
+        label: "Une activité libérale non commerciale (consulting, profession réglementée ou non...)",
+      },
+    ],
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "couple" &&
+      answers["activite-independante-conjoint"] === true,
+  },
+  {
+    id: "chiffre-affaires-independant-2025-conjoint",
+    type: "number",
+    prompt: "Quel est le montant total du chiffre d'affaires encaissé par votre conjoint·e pour cette activité en 2025 ?",
+    helpText:
+      "Montant brut total facturé et encaissé, avant tout abattement. Ne déduisez aucune charge vous-même : l'abattement forfaitaire est calculé automatiquement selon le type d'activité.",
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "couple" &&
+      answers["activite-independante-conjoint"] === true,
+    validate: (value) =>
+      typeof value === "number" && value >= 0
+        ? undefined
+        : "Merci d'indiquer un montant positif ou nul.",
+  },
 ];
