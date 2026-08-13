@@ -1,5 +1,5 @@
 import { UnsupportedSituationError } from "../errors";
-import type { Answers, DeclarationLine, DeclarationResult } from "../types";
+import type { Answers, DeclarationLine, DeclarationResult, TauxPrelevementSource } from "../types";
 import {
   ABATTEMENT_10_PLAFOND_2025,
   ABATTEMENT_10_PLANCHER_2025,
@@ -162,6 +162,57 @@ function formatParts(parts: number): string {
   return String(parts).replace(".", ",");
 }
 
+/** CGI art. 204 H : arrondi à la décimale la plus proche (0,50 arrondi au-dessus), plancher 0%. */
+function roundTaux(value: number): number {
+  return Math.max(0, Math.round(value * 10) / 10);
+}
+
+/**
+ * CGI art. 204 H ; BOI-IR-PAS-20-20-10 : taux de droit commun (« taux foyer »).
+ * Le dénominateur est le revenu brut entrant dans le champ du PAS (avant
+ * abattement de 10%, salaire/chômage/pension confondus), pas le revenu imposable
+ * retenu pour l'IR — vérifié par recoupement avec le simulateur officiel DGFiP
+ * (cf. docs/updates/2025-verification-increment-5.md).
+ */
+export function computeTauxPrelevementSourceFoyer(tax: number, totalRevenuBrut: number): number {
+  if (totalRevenuBrut <= 0) return 0;
+  return roundTaux((tax / totalRevenuBrut) * 100);
+}
+
+/**
+ * BOI-IR-PAS-20-20-20 : taux individualisé, taux de droit commun pour les couples
+ * depuis le 1er septembre 2025. Le conjoint aux revenus bruts les plus faibles se
+ * voit d'abord attribuer un taux calculé en appliquant le mécanisme complet de
+ * l'art. 197, I-1° à 4° (barème, plafonnement du quotient familial, décote — nos
+ * fonctions `computeQuotientFamilialTax`/`computeDecote`) à son seul revenu
+ * imposable, avec le nombre de parts réel du foyer. L'autre conjoint récupère le
+ * reliquat. Formule et arrondi intermédiaire vérifiés sur l'exemple chiffré
+ * officiel de la documentation BOFiP (couple 24 000€/120 000€, IR 25 211€ ->
+ * 3,0%/20,4%, cf. compute.test.ts).
+ */
+export function computeTauxPrelevementSourceIndividualise(
+  tax: number,
+  rawVous: number,
+  rawConjoint: number,
+  taxableIncomeVousSeul: number,
+  taxableIncomeConjointSeul: number,
+  parts: number,
+): { vous: number; conjoint: number } {
+  const vousEstLePlusFaible = rawVous <= rawConjoint;
+  const rawFaible = vousEstLePlusFaible ? rawVous : rawConjoint;
+  const rawEleve = vousEstLePlusFaible ? rawConjoint : rawVous;
+  const taxableFaible = vousEstLePlusFaible ? taxableIncomeVousSeul : taxableIncomeConjointSeul;
+
+  const irFaible = computeDecote(computeQuotientFamilialTax(taxableFaible, parts, true).brutTax, true);
+  const tauxFaible = rawFaible > 0 ? roundTaux((irFaible / rawFaible) * 100) : 0;
+  const tauxEleve =
+    rawEleve > 0 ? roundTaux(((tax - (tauxFaible / 100) * rawFaible) / rawEleve) * 100) : 0;
+
+  return vousEstLePlusFaible
+    ? { vous: tauxFaible, conjoint: tauxEleve }
+    : { vous: tauxEleve, conjoint: tauxFaible };
+}
+
 export function computeDeclaration(answers: Answers, year: number): DeclarationResult {
   if (year !== 2025) {
     throw new Error(`Année fiscale non supportée par ce module : ${year}`);
@@ -313,5 +364,27 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     );
   }
 
-  return { lines, warnings: warnings.length > 0 ? warnings : undefined };
+  const rawVous = vous.netImposable + chomageVous + pensionVous;
+  const rawConjoint = conjoint.netImposable + chomageConjoint + pensionConjoint;
+  const tauxFoyer = computeTauxPrelevementSourceFoyer(tax, rawVous + rawConjoint);
+
+  let tauxPrelevementSource: TauxPrelevementSource;
+  if (isCouple) {
+    const taxableIncomeVousSeul = taxableIncomeVous + computePensionTaxableIncome(pensionVous, 0);
+    const taxableIncomeConjointSeul =
+      taxableIncomeConjoint + computePensionTaxableIncome(pensionConjoint, 0);
+    const individualise = computeTauxPrelevementSourceIndividualise(
+      tax,
+      rawVous,
+      rawConjoint,
+      taxableIncomeVousSeul,
+      taxableIncomeConjointSeul,
+      parts,
+    );
+    tauxPrelevementSource = { foyer: tauxFoyer, vous: individualise.vous, conjoint: individualise.conjoint };
+  } else {
+    tauxPrelevementSource = { foyer: tauxFoyer };
+  }
+
+  return { lines, warnings: warnings.length > 0 ? warnings : undefined, tauxPrelevementSource };
 }

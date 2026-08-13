@@ -28,7 +28,7 @@ Exemple : au lieu de "Optez-vous pour l'abattement forfaitaire de 10% ou les fra
 - Pensions de retraite, un ou deux déclarants, lignes 1AS/1BS — abattement de 10% distinct de celui du salaire/chômage, avec un plancher par pensionné (454€) mais un plafond commun à tout le foyer (4 439€, pas doublé pour un couple de deux pensionnés) (CGI art. 158, 5°, a).
 - Frais professionnels : abattement 10% vs frais réels (question simple, calcul automatique du régime le plus avantageux).
 - Situation familiale : célibataire sans enfant, ou marié/pacsé avec ou sans enfants (quotient familial, plafonnement général, décote spécifique couple). Le régime « parent isolé » (célibataire avec enfant(s) à charge, demi-part majorée) est nuancé ci-dessous, en roadmap plutôt qu'en inclus direct.
-- Taux de prélèvement à la source (PAS) : individualisé, personnalisé, neutre — explication du choix et grille de taux neutre.
+- Taux de prélèvement à la source (PAS) : taux foyer et taux individualisé (défaut couples depuis le 01/09/2025), affichés sur l'écran de résultat avec explication (CGI art. 204 H). La grille de taux neutre (cas d'un nouvel employeur sans taux encore transmis) répond à un besoin différent et n'est pas couverte.
 - 3 à 5 crédits/déductions courants : dons, frais de garde d'enfants, emploi à domicile, versements PER.
 - Écran de résultat : liste des lignes à remplir + explications + avertissement.
 

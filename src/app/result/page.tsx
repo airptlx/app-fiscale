@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ResultLines } from "@/components/questionnaire/result-lines";
+import { ResultTauxPAS } from "@/components/questionnaire/result-taux-pas";
 import { ResultWarnings } from "@/components/questionnaire/result-warnings";
 import { UnsupportedSituation } from "@/components/questionnaire/unsupported-situation";
 import { useQuestionnaire } from "@/hooks/use-questionnaire";
@@ -60,6 +61,7 @@ export default function ResultPage() {
         result && (
           <>
             <ResultLines lines={result.lines} />
+            <ResultTauxPAS taux={result.tauxPrelevementSource} />
             {result.warnings && <ResultWarnings warnings={result.warnings} />}
             <Button onClick={handleRestart} variant="outline" className="self-start">
               Recommencer

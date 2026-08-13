@@ -1,4 +1,4 @@
-import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
+import { Progress, ProgressLabel } from "@/components/ui/progress";
 
 export function QuestionnaireProgress({
   position,
@@ -12,7 +12,6 @@ export function QuestionnaireProgress({
   return (
     <Progress value={value} className="w-full">
       <ProgressLabel>Progression</ProgressLabel>
-      <ProgressValue>{() => `Question ${position} sur ${total}`}</ProgressValue>
     </Progress>
   );
 }

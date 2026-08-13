@@ -34,8 +34,20 @@ export interface DeclarationLine {
   source: string;
 }
 
+/**
+ * Taux de prélèvement à la source (CGI art. 204 H), en pourcentage (ex. 3.4 = 3,4%).
+ * `vous`/`conjoint` (taux individualisé, par déclarant) ne sont présents qu'en
+ * couple — pour un célibataire, seul `foyer` a un sens (un seul déclarant).
+ */
+export interface TauxPrelevementSource {
+  foyer: number;
+  vous?: number;
+  conjoint?: number;
+}
+
 export interface DeclarationResult {
   lines: DeclarationLine[];
   /** Avertissements en langage courant, ex. quand un montant est une estimation. */
   warnings?: string[];
+  tauxPrelevementSource: TauxPrelevementSource;
 }

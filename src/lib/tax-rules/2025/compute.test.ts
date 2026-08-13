@@ -5,6 +5,8 @@ import {
   computeParts,
   computePensionTaxableIncome,
   computeProgressiveTax,
+  computeTauxPrelevementSourceFoyer,
+  computeTauxPrelevementSourceIndividualise,
   computeTaxableIncome,
   resolveChomage,
   resolvePension,
@@ -431,5 +433,109 @@ describe("computeDeclaration (2025, pensions de retraite — case 1AS/1BS)", () 
     );
     expect(result.lines.map((l) => l.code)).toEqual(["1AJ", undefined, undefined]);
     expect(result.lines).toHaveLength(3);
+  });
+});
+
+describe("computeTauxPrelevementSourceFoyer (CGI art. 204 H — taux foyer)", () => {
+  it("is 0 when there is no income", () => {
+    expect(computeTauxPrelevementSourceFoyer(0, 0)).toBe(0);
+  });
+
+  it("matches the official simulator for a célibataire with salaire + chômage (incrément 5)", () => {
+    // 845€ d'impôt / 25 000€ de revenus bruts (20 000 salaire + 5 000 chômage) = 3,38% -> 3,4%,
+    // valeur exacte retournée par le simulateur officiel (docs/updates/2025-verification-increment-5.md).
+    expect(computeTauxPrelevementSourceFoyer(845, 25_000)).toBe(3.4);
+  });
+
+  it("matches the official simulator for a couple with tax fully absorbed by the décote (incrément 5)", () => {
+    expect(computeTauxPrelevementSourceFoyer(0, 28_000)).toBe(0);
+  });
+
+  it("rounds a half-tenth (x.x5%) up, per the CGI art. 204 H rounding rule", () => {
+    // 1 250 / 100 000 = 1,25% pile -> arrondi à 1,3% (0,50 compte pour un).
+    expect(computeTauxPrelevementSourceFoyer(1_250, 100_000)).toBe(1.3);
+  });
+});
+
+describe("computeTauxPrelevementSourceIndividualise (BOI-IR-PAS-20-20-20)", () => {
+  it("reproduces the official BOFiP worked example (24 000€ / 120 000€, IR 25 211€ -> 3.0% / 20.4%)", () => {
+    // L'exemple officiel donne IR_faible = 725€ mais pas la taxableIncome sous-
+    // jacente. 37 019€ est une valeur trouvée par recherche exhaustive telle que
+    // computeQuotientFamilialTax(37_019, 2, true) + computeDecote(..., true)
+    // redonne exactement 725€ (couple 2 parts) — voir la recherche menée pendant
+    // le développement ; peu importe la valeur exacte de taxableIncome retenue
+    // par l'administration dans l'exemple, ce qui compte ici est que la suite du
+    // calcul (taux, puis répartition du reliquat) colle aux chiffres officiels.
+    const taxableIncomeFaible = 37_019;
+    const result = computeTauxPrelevementSourceIndividualise(
+      25_211,
+      24_000,
+      120_000,
+      taxableIncomeFaible,
+      0,
+      2,
+    );
+    expect(result.vous).toBe(3.0);
+    expect(result.conjoint).toBe(20.4);
+  });
+
+  it("assigns the lower rate to whichever spouse has the lower raw income, regardless of vous/conjoint order", () => {
+    const taxableIncomeFaible = 37_019;
+    const asVousFaible = computeTauxPrelevementSourceIndividualise(
+      25_211,
+      24_000,
+      120_000,
+      taxableIncomeFaible,
+      0,
+      2,
+    );
+    const asConjointFaible = computeTauxPrelevementSourceIndividualise(
+      25_211,
+      120_000,
+      24_000,
+      0,
+      taxableIncomeFaible,
+      2,
+    );
+    expect(asConjointFaible.conjoint).toBe(asVousFaible.vous);
+    expect(asConjointFaible.vous).toBe(asVousFaible.conjoint);
+  });
+
+  it("is 0/0 when neither spouse has any income", () => {
+    expect(computeTauxPrelevementSourceIndividualise(0, 0, 0, 0, 0, 2)).toEqual({ vous: 0, conjoint: 0 });
+  });
+});
+
+describe("computeDeclaration — tauxPrelevementSource wiring", () => {
+  it("returns only a foyer rate for a célibataire", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        chomage: true,
+        "montant-chomage-2025": 5_000,
+      },
+      2025,
+    );
+    expect(result.tauxPrelevementSource).toEqual({ foyer: 3.4 });
+  });
+
+  it("returns foyer + individualised rates for a couple", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 0,
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "conjoint-a-un-salaire": true,
+        "fiche-paie-disponible-conjoint": true,
+        "salaire-net-imposable-2025-conjoint": 20_000,
+      },
+      2025,
+    );
+    expect(result.tauxPrelevementSource.foyer).toBeGreaterThan(0);
+    expect(result.tauxPrelevementSource.vous).toBeDefined();
+    expect(result.tauxPrelevementSource.conjoint).toBeDefined();
   });
 });
