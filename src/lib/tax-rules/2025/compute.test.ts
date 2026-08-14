@@ -648,6 +648,26 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
     ).not.toThrow();
   });
 
+  it("accepts an already-computed régime réel result above the seuil (case 4BA)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "activites-annexes": ["foncier"],
+        "montant-foncier-2025": 20_000,
+        "foncier-regime-reel-connu": true,
+        "foncier-net-reel-2025": 12_000,
+      },
+      2025,
+    );
+    const foncierLine = result.lines.find((l) => l.code === "4BA");
+    expect(foncierLine).toEqual(expect.objectContaining({ value: 12_000, category: "revenus" }));
+    expect(result.lines.some((l) => l.code === "4BE")).toBe(false);
+    expect(result.lines.some((l) => l.label.includes("abattement de 30%"))).toBe(false);
+  });
+
   it("does not add foncier lines when not checked (regression)", () => {
     const result = computeDeclaration(
       {
@@ -837,7 +857,7 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
     expect(liberale.lines.map((l) => l.code)).toContain("5HQ");
   });
 
-  it("throws UnsupportedSituationError when the chiffre d'affaires exceeds the seuil for the activity type", () => {
+  it("throws UnsupportedSituationError when the chiffre d'affaires exceeds the seuil two years in a row", () => {
     expect(() =>
       computeDeclaration(
         {
@@ -848,10 +868,28 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
           "activites-annexes": ["micro-entreprise"],
           "type-activite-independante": "service",
           "chiffre-affaires-independant-2025": 77_701,
+          "depassement-deux-ans-independant": true,
         },
         2025,
       ),
     ).toThrow(UnsupportedSituationError);
+  });
+
+  it("does not throw on an isolated (single-year) overrun — micro regime still applies", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "activites-annexes": ["micro-entreprise"],
+        "type-activite-independante": "service",
+        "chiffre-affaires-independant-2025": 77_701,
+      },
+      2025,
+    );
+    const caLine = result.lines.find((l) => l.code === "5KP");
+    expect(caLine).toEqual(expect.objectContaining({ value: 77_701 }));
   });
 
   it("does not throw exactly at the seuil", () => {

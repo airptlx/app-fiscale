@@ -242,7 +242,7 @@ export type TypeActiviteIndependante = "vente" | "service" | "liberale";
  * d'éligibilité et code de case (formulaire 2042-C-PRO, régime sans versement
  * libératoire) par type d'activité et par déclarant.
  */
-const MICRO_ACTIVITE_INFO: Record<
+export const MICRO_ACTIVITE_INFO: Record<
   TypeActiviteIndependante,
   { taux: number; seuil: number; codeVous: string; codeConjoint: string; libelle: string }
 > = {
@@ -385,29 +385,41 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const isCouple = situation === "couple";
 
   const recettesBrutesFoncier = resolveFoncier(answers);
-  if (recettesBrutesFoncier > MICRO_FONCIER_SEUIL_2025) {
+  // CGI art. 32 ; BOFiP BOI-RFPI-DECLA-10 : contrairement au micro-BIC/BNC ci-dessous, le
+  // seuil foncier est apprécié année par année, sans tolérance sur deux ans.
+  const foncierRegimeReel = recettesBrutesFoncier > MICRO_FONCIER_SEUIL_2025;
+  if (foncierRegimeReel && answers["foncier-regime-reel-connu"] !== true) {
     throw new UnsupportedSituationError(
-      "Tes revenus fonciers dépassent 15 000 € par an pour le foyer : le régime réel s'applique alors obligatoirement (déduction des charges réelles), ce que cet outil ne prend pas encore en charge. Vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+      "Tes revenus fonciers dépassent 15 000 € par an pour le foyer : le régime réel s'applique alors obligatoirement (déduction des charges réelles), ce que cet outil ne calcule pas à ta place. Si tu as déjà ce résultat net (formulaire 2044, comptable...), reviens en arrière pour l'indiquer directement. Sinon, vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
     );
   }
+  const foncierNetReel = foncierRegimeReel ? Number(answers["foncier-net-reel-2025"] ?? 0) : undefined;
 
   const dividendes = resolveDividendes(answers);
   const plusValueTitres = resolvePlusValueTitres(answers);
   const pfu = computePFU(dividendes, plusValueTitres);
 
+  // CGI art. 50-0 (BIC) / art. 102 ter (BNC) ; BOFiP BOI-BIC-DECLA-10-10-10 §50, BOI-BNC-DECLA-20-10
+  // §100 : la sortie du régime micro n'intervient qu'après un dépassement du seuil deux années
+  // consécutives — un dépassement isolé l'année déclarée n'y met pas fin.
   const activiteVous = resolveActiviteIndependante(answers, "");
-  if (activiteVous.type && activiteVous.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteVous.type].seuil) {
+  if (
+    activiteVous.type &&
+    activiteVous.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteVous.type].seuil &&
+    answers["depassement-deux-ans-independant"] === true
+  ) {
     throw new UnsupportedSituationError(
-      "Le chiffre d'affaires de ton activité de micro-entrepreneur dépasse le seuil du régime micro-entreprise pour ce type d'activité : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement, ce que cet outil ne prend pas encore en charge. Vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+      "Le chiffre d'affaires de ton activité de micro-entrepreneur dépasse le seuil du régime micro-entreprise deux années de suite : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement à partir de cette année, ce que cet outil ne prend pas encore en charge. Vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
     );
   }
   const activiteConjoint = isCouple ? resolveActiviteIndependante(answers, "-conjoint") : { type: undefined, chiffreAffaires: 0 };
   if (
     activiteConjoint.type &&
-    activiteConjoint.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteConjoint.type].seuil
+    activiteConjoint.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteConjoint.type].seuil &&
+    answers["depassement-deux-ans-independant-conjoint"] === true
   ) {
     throw new UnsupportedSituationError(
-      "Le chiffre d'affaires de l'activité de micro-entrepreneur de ton/ta conjoint·e dépasse le seuil du régime micro-entreprise pour ce type d'activité : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement, ce que cet outil ne prend pas encore en charge. Vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
+      "Le chiffre d'affaires de l'activité de micro-entrepreneur de ton/ta conjoint·e dépasse le seuil du régime micro-entreprise deux années de suite : le régime réel (BIC) ou la déclaration contrôlée (BNC) s'applique alors obligatoirement à partir de cette année, ce que cet outil ne prend pas encore en charge. Vérifie ta déclaration sur impots.gouv.fr ou auprès d'un professionnel.",
     );
   }
 
@@ -435,7 +447,9 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const taxableIncomePensions = computePensionTaxableIncome(pensionVous, pensionConjoint);
 
   const foncierDeclare = includesOption(answers["activites-annexes"], "foncier");
-  const taxableIncomeFoncier = computeFoncierTaxableIncome(recettesBrutesFoncier);
+  const taxableIncomeFoncier = foncierRegimeReel
+    ? foncierNetReel!
+    : computeFoncierTaxableIncome(recettesBrutesFoncier);
 
   const dividendesDeclare = includesOption(answers["activites-annexes"], "dividendes");
   const plusValueTitresDeclare = includesOption(answers["activites-annexes"], "plus-value-titres");
@@ -537,7 +551,17 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     });
   }
 
-  if (foncierDeclare) {
+  if (foncierDeclare && foncierRegimeReel) {
+    lines.push({
+      code: "4BA",
+      label: "Revenu foncier net imposable à déclarer (régime réel)",
+      value: foncierNetReel!,
+      explanation:
+        "C'est le résultat net que tu as déjà calculé (loyers moins charges déductibles : travaux, intérêts d'emprunt, taxe foncière, assurance, frais de gestion...), à reporter dans la case 4BA après avoir rempli la déclaration annexe 2044.",
+      source: "impots.gouv.fr — brochure IR, Revenus fonciers (régime réel)",
+      category: "revenus",
+    });
+  } else if (foncierDeclare) {
     lines.push({
       code: "4BE",
       label: "Revenus fonciers bruts à déclarer (location non meublée)",
@@ -616,7 +640,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     });
   }
 
-  if (foncierDeclare) {
+  if (foncierDeclare && !foncierRegimeReel) {
     lines.push({
       label: "Revenu foncier imposable retenu, après abattement de 30% (régime micro-foncier)",
       value: taxableIncomeFoncier,

@@ -1,7 +1,10 @@
-import { ANNEE_REVENUS_2025 } from "./constants";
-import type { Question } from "../types";
+import { MICRO_ACTIVITE_INFO, type TypeActiviteIndependante } from "./compute";
+import { ANNEE_REVENUS_2025, MICRO_FONCIER_SEUIL_2025 } from "./constants";
+import type { Answers, Question } from "../types";
 
 const ANNEE_LABEL = `l'année dernière (${ANNEE_REVENUS_2025})`;
+const ANNEE_N_MOINS_1 = ANNEE_REVENUS_2025 - 1;
+const ANNEE_N_MOINS_2 = ANNEE_REVENUS_2025 - 2;
 
 function situationConnue(situation: unknown): situation is "celibataire" | "couple" {
   return situation === "celibataire" || situation === "couple";
@@ -9,6 +12,13 @@ function situationConnue(situation: unknown): situation is "celibataire" | "coup
 
 function includesOption(value: unknown, option: string): boolean {
   return Array.isArray(value) && (value as string[]).includes(option);
+}
+
+function depasseSeuilMicro(answers: Answers, suffix: "" | "-conjoint"): boolean {
+  const type = answers[`type-activite-independante${suffix}`] as TypeActiviteIndependante | undefined;
+  if (!type) return false;
+  const chiffreAffaires = Number(answers[`chiffre-affaires-independant-2025${suffix}`] ?? 0);
+  return chiffreAffaires > MICRO_ACTIVITE_INFO[type].seuil;
 }
 
 export const QUESTIONS_2025: Question[] = [
@@ -212,6 +222,34 @@ export const QUESTIONS_2025: Question[] = [
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
   },
   {
+    id: "foncier-regime-reel-connu",
+    type: "boolean",
+    prompt:
+      "As-tu déjà calculé le résultat net de tes revenus fonciers en dehors de cet outil (loyers moins charges déductibles : travaux, intérêts d'emprunt, taxe foncière, assurance, frais de gestion...) ?",
+    helpText:
+      "Au-delà de ce montant de loyers bruts par an, l'abattement automatique de 30% cède la place à un calcul basé sur tes charges réelles, que cet outil ne fait pas à ta place. Si tu l'as déjà (formulaire 2044, comptable...), tu peux l'indiquer directement.",
+    isVisible: (answers) =>
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "foncier") &&
+      Number(answers["montant-foncier-2025"] ?? 0) > MICRO_FONCIER_SEUIL_2025,
+  },
+  {
+    id: "foncier-net-reel-2025",
+    type: "number",
+    prompt: "Quel est ce résultat net (bénéfice) ?",
+    helpText:
+      "C'est le montant après déduction de toutes tes charges réelles. Si tu es en déficit foncier cette année, ce cas n'est pas encore pris en charge par cet outil.",
+    isVisible: (answers) =>
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "foncier") &&
+      Number(answers["montant-foncier-2025"] ?? 0) > MICRO_FONCIER_SEUIL_2025 &&
+      answers["foncier-regime-reel-connu"] === true,
+    validate: (value) =>
+      typeof value === "number" && value >= 0
+        ? undefined
+        : "Indique un montant positif ou nul — un déficit foncier n'est pas encore pris en charge par cet outil.",
+  },
+  {
     id: "montant-dividendes-2025",
     type: "number",
     prompt: `Quel est le montant brut total des dividendes que tu as touchés ${ANNEE_LABEL} ?`,
@@ -296,6 +334,19 @@ export const QUESTIONS_2025: Question[] = [
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
   },
   {
+    id: "depassement-deux-ans-independant",
+    type: "boolean",
+    prompt: `As-tu déjà dépassé ce seuil deux années de suite avant cette déclaration (donc en ${ANNEE_N_MOINS_2} et en ${ANNEE_N_MOINS_1}) ?`,
+    helpText:
+      "Le régime micro-entreprise reste applicable tant que tu ne dépasses pas ce seuil deux années consécutives avant l'année déclarée : un dépassement isolé, comme celui de cette année, ne suffit pas à en sortir.",
+    isVisible: (answers) =>
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "micro-entreprise") &&
+      (answers["situation-conjugale"] === "celibataire" ||
+        includesOption(answers["qui-activite-independante"], "toi")) &&
+      depasseSeuilMicro(answers, ""),
+  },
+  {
     id: "type-activite-independante-conjoint",
     type: "single-choice",
     prompt: "Quel est le type de cette activité (conjoint·e) ?",
@@ -330,5 +381,17 @@ export const QUESTIONS_2025: Question[] = [
       includesOption(answers["qui-activite-independante"], "conjoint"),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
+  },
+  {
+    id: "depassement-deux-ans-independant-conjoint",
+    type: "boolean",
+    prompt: `Ton/ta conjoint·e a-t-il/elle déjà dépassé ce seuil deux années de suite avant cette déclaration (donc en ${ANNEE_N_MOINS_2} et en ${ANNEE_N_MOINS_1}) ?`,
+    helpText:
+      "Le régime micro-entreprise reste applicable tant que ce seuil n'est pas dépassé deux années consécutives avant l'année déclarée : un dépassement isolé, comme celui de cette année, ne suffit pas à en sortir.",
+    isVisible: (answers) =>
+      answers["situation-conjugale"] === "couple" &&
+      includesOption(answers["activites-annexes"], "micro-entreprise") &&
+      includesOption(answers["qui-activite-independante"], "conjoint") &&
+      depasseSeuilMicro(answers, "-conjoint"),
   },
 ];
