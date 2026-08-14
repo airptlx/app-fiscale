@@ -907,3 +907,49 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
     expect(result.lines).toHaveLength(3);
   });
 });
+
+describe("computeDeclaration (2025, conseil crypto — comptes d'actifs numériques à l'étranger)", () => {
+  it("adds a conseil when a foreign crypto account is checked", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+        "activites-annexes": ["crypto"],
+      },
+      2025,
+    );
+    expect(result.conseils).toHaveLength(1);
+    expect(result.conseils?.[0].text).toMatch(/3916-bis/);
+  });
+
+  it("does not add a conseil when crypto is not checked (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.conseils).toBeUndefined();
+  });
+
+  it("adds the crypto conseil alongside foncier/micro-entreprise when several activites-annexes are checked", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+        "activites-annexes": ["foncier", "crypto"],
+        "montant-foncier-2025": 6_000,
+      },
+      2025,
+    );
+    expect(result.lines.map((l) => l.code)).toContain("4BE");
+    expect(result.conseils).toHaveLength(1);
+  });
+});

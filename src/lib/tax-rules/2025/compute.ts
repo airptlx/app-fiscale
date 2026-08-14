@@ -1,5 +1,5 @@
 import { UnsupportedSituationError } from "../errors";
-import type { Answers, DeclarationLine, DeclarationResult, TauxPrelevementSource } from "../types";
+import type { Answers, Conseil, DeclarationLine, DeclarationResult, TauxPrelevementSource } from "../types";
 import {
   ABATTEMENT_10_PLAFOND_2025,
   ABATTEMENT_10_PLANCHER_2025,
@@ -592,6 +592,14 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     );
   }
 
+  const conseils: Conseil[] = [];
+  if (includesOption(answers["activites-annexes"], "crypto")) {
+    conseils.push({
+      text: "Tu as un compte sur une plateforme crypto basée à l'étranger : aux yeux de l'administration, c'est un compte à l'étranger. Tu dois déclarer son existence chaque année avec le formulaire 3916-bis, séparément de ta déclaration de revenus — même si tu n'as rien vendu et même si le compte est presque vide (une plateforme basée en France n'est pas concernée). Oublier cette déclaration coûte 750€ par compte non déclaré, 1 500€ si sa valeur a dépassé 50 000€ à un moment de l'année. Si tu as aussi vendu des cryptos contre des euros avec un gain, il y a un formulaire séparé (2086) pour ça — non calculé par cet outil pour l'instant.",
+      source: "CGI art. 1649 bis C (obligation), art. 1736 X (sanctions) ; impots.gouv.fr — Modalités de déclaration des comptes d'actifs numériques détenus à l'étranger",
+    });
+  }
+
   const rawVous = vous.netImposable + chomageVous + pensionVous + activiteVous.chiffreAffaires;
   const rawConjoint =
     conjoint.netImposable + chomageConjoint + pensionConjoint + activiteConjoint.chiffreAffaires;
@@ -630,5 +638,10 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     tauxPrelevementSource = { foyer: tauxFoyer };
   }
 
-  return { lines, warnings: warnings.length > 0 ? warnings : undefined, tauxPrelevementSource };
+  return {
+    lines,
+    warnings: warnings.length > 0 ? warnings : undefined,
+    conseils: conseils.length > 0 ? conseils : undefined,
+    tauxPrelevementSource,
+  };
 }

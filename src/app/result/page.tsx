@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
+import { ResultConseils } from "@/components/questionnaire/result-conseils";
 import { ResultLines } from "@/components/questionnaire/result-lines";
 import { ResultRecapCases } from "@/components/questionnaire/result-recap-cases";
 import { ResultTauxPAS } from "@/components/questionnaire/result-taux-pas";
@@ -61,10 +63,26 @@ export default function ResultPage() {
       ) : (
         result && (
           <>
-            <ResultLines lines={result.lines} />
-            <ResultTauxPAS taux={result.tauxPrelevementSource} />
-            {result.warnings && <ResultWarnings warnings={result.warnings} />}
-            <ResultRecapCases lines={result.lines} />
+            <Tabs defaultValue="detail">
+              <TabsList>
+                <TabsTab value="detail">Détail</TabsTab>
+                <TabsTab value="cases">Cases à vérifier</TabsTab>
+                {result.conseils && <TabsTab value="conseils">Conseils</TabsTab>}
+              </TabsList>
+              <TabsPanel value="detail" className="flex flex-col gap-6">
+                <ResultLines lines={result.lines} />
+                <ResultTauxPAS taux={result.tauxPrelevementSource} />
+                {result.warnings && <ResultWarnings warnings={result.warnings} />}
+              </TabsPanel>
+              <TabsPanel value="cases">
+                <ResultRecapCases lines={result.lines} />
+              </TabsPanel>
+              {result.conseils && (
+                <TabsPanel value="conseils">
+                  <ResultConseils conseils={result.conseils} />
+                </TabsPanel>
+              )}
+            </Tabs>
             <Button onClick={handleRestart} variant="outline" className="self-start">
               Recommencer
             </Button>

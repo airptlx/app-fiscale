@@ -186,6 +186,10 @@ export const QUESTIONS_2025: Question[] = [
     options: [
       { value: "foncier", label: "Des loyers (location non meublée)" },
       { value: "micro-entreprise", label: "Une activité de micro-entrepreneur (auto-entrepreneur)" },
+      {
+        value: "crypto",
+        label: "Un compte sur une plateforme d'échange crypto basée à l'étranger (Binance, Kraken, Coinbase...)",
+      },
     ],
     isVisible: (answers) => situationConnue(answers["situation-conjugale"]),
   },

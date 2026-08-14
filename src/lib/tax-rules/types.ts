@@ -45,9 +45,22 @@ export interface TauxPrelevementSource {
   conjoint?: number;
 }
 
+/**
+ * Une action à mener en dehors de cette déclaration (ex. déclarer l'existence
+ * d'un compte crypto à l'étranger) — contrairement à `DeclarationLine`, pas de
+ * montant ni de case associée ici ; contrairement à `warnings`, ce n'est pas une
+ * mise en garde sur un chiffre déjà affiché.
+ */
+export interface Conseil {
+  text: string;
+  source: string;
+}
+
 export interface DeclarationResult {
   lines: DeclarationLine[];
   /** Avertissements en langage courant, ex. quand un montant est une estimation. */
   warnings?: string[];
+  /** Actions à mener ailleurs (autres formulaires, autres obligations déclaratives). */
+  conseils?: Conseil[];
   tauxPrelevementSource: TauxPrelevementSource;
 }

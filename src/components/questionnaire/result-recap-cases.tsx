@@ -10,7 +10,6 @@ export function ResultRecapCases({ lines }: { lines: DeclarationLine[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold">Cases à vérifier sur ta déclaration</h2>
       <p className="text-sm text-muted-foreground">
         Garde ce récapitulatif sous les yeux pendant que tu remplis ta déclaration réelle sur
         impots.gouv.fr, et vérifie que chaque case correspond.
