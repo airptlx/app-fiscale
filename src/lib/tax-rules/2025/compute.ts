@@ -423,10 +423,10 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const chomageConjoint = chomageConjointDeclare ? resolveChomage(answers, "-conjoint") : 0;
   const conjointADesRevenus = conjointASalaire || chomageConjointDeclare;
 
-  const taxableIncomeVous = computeTaxableIncome(vous.netImposable + chomageVous);
-  const taxableIncomeConjoint = conjointADesRevenus
-    ? computeTaxableIncome(conjoint.netImposable + chomageConjoint)
-    : 0;
+  const brutVous = vous.netImposable + chomageVous;
+  const brutConjoint = conjoint.netImposable + chomageConjoint;
+  const taxableIncomeVous = computeTaxableIncome(brutVous);
+  const taxableIncomeConjoint = conjointADesRevenus ? computeTaxableIncome(brutConjoint) : 0;
 
   const pensionDeclare = includesOption(answers["revenus"], "pension");
   const pensionVous = resolvePension(answers, "");
@@ -723,10 +723,21 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     tauxPrelevementSource = { foyer: tauxFoyer };
   }
 
+  const fraisReelsComparaison = {
+    vous:
+      brutVous > 0 ? { brut: brutVous, abattementActuel: brutVous - taxableIncomeVous } : undefined,
+    conjoint:
+      conjointADesRevenus && brutConjoint > 0
+        ? { brut: brutConjoint, abattementActuel: brutConjoint - taxableIncomeConjoint }
+        : undefined,
+  };
+
   return {
     lines,
     warnings: warnings.length > 0 ? warnings : undefined,
     conseils: conseils.length > 0 ? conseils : undefined,
     tauxPrelevementSource,
+    fraisReelsComparaison:
+      fraisReelsComparaison.vous || fraisReelsComparaison.conjoint ? fraisReelsComparaison : undefined,
   };
 }

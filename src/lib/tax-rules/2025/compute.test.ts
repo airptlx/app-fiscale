@@ -1130,3 +1130,95 @@ describe("computeDeclaration (2025, conseil PEA)", () => {
     expect(result.conseils).toHaveLength(2);
   });
 });
+
+describe("computeDeclaration (2025, fraisReelsComparaison — abattement 10% exposé pour le simulateur)", () => {
+  it("exposes brut/abattementActuel for a single célibataire with a salary", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.fraisReelsComparaison).toEqual({
+      vous: { brut: 28_000, abattementActuel: 2_800 },
+      conjoint: undefined,
+    });
+  });
+
+  it("exposes both vous and conjoint independently for a couple with two salaries", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        "nombre-enfants-a-charge": 0,
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "revenus-conjoint": ["salaire"],
+        "fiche-paie-disponible-conjoint": true,
+        "salaire-net-imposable-2025-conjoint": 30_000,
+      },
+      2025,
+    );
+    expect(result.fraisReelsComparaison).toEqual({
+      vous: { brut: 20_000, abattementActuel: 2_000 },
+      conjoint: { brut: 30_000, abattementActuel: 3_000 },
+    });
+  });
+
+  it("caps the abattement at the 14 555€ plafond for a high salary", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 200_000,
+      },
+      2025,
+    );
+    expect(result.fraisReelsComparaison?.vous).toEqual({ brut: 200_000, abattementActuel: 14_555 });
+  });
+
+  it("includes chômage in the brut/abattement pool alongside salaire (same abattement pool)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire", "chomage"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 20_000,
+        "montant-chomage-2025": 5_000,
+      },
+      2025,
+    );
+    expect(result.fraisReelsComparaison?.vous).toEqual({ brut: 25_000, abattementActuel: 2_500 });
+  });
+
+  it("is entirely undefined when nobody has salaire/chômage (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["pension"],
+        "montant-pension-2025": 15_000,
+      },
+      2025,
+    );
+    expect(result.fraisReelsComparaison).toBeUndefined();
+  });
+
+  it("omits conjoint when the couple's conjoint has no salaire/chômage", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "couple",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 45_000,
+        "revenus-conjoint": [],
+      },
+      2025,
+    );
+    expect(result.fraisReelsComparaison?.vous).toEqual({ brut: 45_000, abattementActuel: 4_500 });
+    expect(result.fraisReelsComparaison?.conjoint).toBeUndefined();
+  });
+});

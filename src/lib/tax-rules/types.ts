@@ -56,6 +56,16 @@ export interface Conseil {
   source: string;
 }
 
+/**
+ * Montant brut d'un déclarant soumis à l'abattement forfaitaire de 10% (salaire +
+ * chômage) et abattement effectivement appliqué — sert de base à la comparaison
+ * avec une estimation de frais réels sur l'écran de résultat.
+ */
+export interface AbattementForfaitaire {
+  brut: number;
+  abattementActuel: number;
+}
+
 export interface DeclarationResult {
   lines: DeclarationLine[];
   /** Avertissements en langage courant, ex. quand un montant est une estimation. */
@@ -63,4 +73,9 @@ export interface DeclarationResult {
   /** Actions à mener ailleurs (autres formulaires, autres obligations déclaratives). */
   conseils?: Conseil[];
   tauxPrelevementSource: TauxPrelevementSource;
+  /** Absent si personne au foyer n'a de salaire/chômage à comparer à des frais réels. */
+  fraisReelsComparaison?: {
+    vous?: AbattementForfaitaire;
+    conjoint?: AbattementForfaitaire;
+  };
 }

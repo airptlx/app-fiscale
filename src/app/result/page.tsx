@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
+import { FraisReelsSimulator } from "@/components/questionnaire/frais-reels-simulator";
 import { ResultConseils } from "@/components/questionnaire/result-conseils";
 import { ResultLines } from "@/components/questionnaire/result-lines";
 import { ResultRecapCases } from "@/components/questionnaire/result-recap-cases";
@@ -71,6 +72,7 @@ export default function ResultPage() {
               </TabsList>
               <TabsPanel value="detail" className="flex flex-col gap-6">
                 <ResultLines lines={result.lines} />
+                <FraisReelsSimulator comparaison={result.fraisReelsComparaison} />
                 <ResultTauxPAS taux={result.tauxPrelevementSource} />
                 {result.warnings && <ResultWarnings warnings={result.warnings} />}
               </TabsPanel>

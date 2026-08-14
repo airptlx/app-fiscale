@@ -29,7 +29,7 @@ describe("ResultPage", () => {
 
     expect((await screen.findAllByText("1AJ")).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/28\s?000/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/estimation/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/est une estimation/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Cases à vérifier" }));
     const table = screen.getByRole("table");
