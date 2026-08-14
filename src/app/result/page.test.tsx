@@ -17,7 +17,7 @@ describe("ResultPage", () => {
     window.localStorage.clear();
   });
 
-  it("renders 1AJ on the Détail tab, and again on the Cases à vérifier tab", async () => {
+  it("renders 1AJ on the Détail tab, and again on the vérification tab", async () => {
     const user = userEvent.setup();
     seedAnswers({
       "situation-conjugale": "celibataire",
@@ -31,7 +31,7 @@ describe("ResultPage", () => {
     expect(screen.getAllByText(/28\s?000/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/est une estimation/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "Cases à vérifier" }));
+    await user.click(screen.getByRole("tab", { name: "Vérification sur impots.gouv.fr" }));
     const table = screen.getByRole("table");
     expect(within(table).getByText("1AJ")).toBeInTheDocument();
   });
@@ -67,7 +67,7 @@ describe("ResultPage", () => {
     });
     render(<ResultPage />);
 
-    await user.click(await screen.findByRole("tab", { name: "Cases à vérifier" }));
+    await user.click(await screen.findByRole("tab", { name: "Vérification sur impots.gouv.fr" }));
     const table = screen.getByRole("table");
     expect(within(table).getByText("1AJ")).toBeInTheDocument();
     expect(within(table).getByText("1AP")).toBeInTheDocument();

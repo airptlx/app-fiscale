@@ -32,6 +32,12 @@ export interface DeclarationLine {
   value: number;
   explanation: string;
   source: string;
+  /**
+   * Regroupement pour l'affichage de l'écran de résultat : "revenus" (montants
+   * déclarés par l'utilisateur, avec case), "abattements" (revenu imposable
+   * retenu après abattement forfaitaire) ou "impot" (calcul de l'impôt lui-même).
+   */
+  category: "revenus" | "abattements" | "impot";
 }
 
 /**
@@ -52,6 +58,8 @@ export interface TauxPrelevementSource {
  * mise en garde sur un chiffre déjà affiché.
  */
 export interface Conseil {
+  /** Thème court affiché en en-tête (ex. "Comptes à l'étranger (crypto)"). */
+  title: string;
   text: string;
   source: string;
 }

@@ -19,6 +19,7 @@ export function ResultRecapCases({ lines }: { lines: DeclarationLine[] }) {
           <thead>
             <tr className="border-b bg-muted/50 text-left">
               <th className="px-4 py-2 font-medium">Case</th>
+              <th className="px-4 py-2 font-medium">Ce que ça représente</th>
               <th className="px-4 py-2 text-right font-medium">Montant</th>
             </tr>
           </thead>
@@ -30,6 +31,7 @@ export function ResultRecapCases({ lines }: { lines: DeclarationLine[] }) {
                     {line.code}
                   </span>
                 </td>
+                <td className="px-4 py-2">{line.label}</td>
                 <td className="px-4 py-2 text-right font-mono tabular-nums">{formatEuros(line.value)}</td>
               </tr>
             ))}

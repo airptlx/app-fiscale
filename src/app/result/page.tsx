@@ -67,7 +67,7 @@ export default function ResultPage() {
             <Tabs defaultValue="detail">
               <TabsList>
                 <TabsTab value="detail">Détail</TabsTab>
-                <TabsTab value="cases">Cases à vérifier</TabsTab>
+                <TabsTab value="cases">Vérification sur impots.gouv.fr</TabsTab>
                 {result.conseils && <TabsTab value="conseils">Conseils</TabsTab>}
               </TabsList>
               <TabsPanel value="detail" className="flex flex-col gap-6">

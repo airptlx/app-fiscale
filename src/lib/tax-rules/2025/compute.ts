@@ -470,6 +470,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
         ? "Estimation calculée à partir de ton salaire brut annuel (environ 80% du brut) — à confirmer avec ta fiche de paie de décembre avant de déclarer."
         : `C'est le montant « Net imposable » indiqué sur ton bulletin de salaire de décembre de ${ANNEE_LABEL} (cumul annuel), à reporter dans la case 1AJ.`,
       source: "impots.gouv.fr — Salaires et assimilés",
+      category: "revenus",
     },
   ];
 
@@ -481,6 +482,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "C'est le montant imposable indiqué sur ton attestation fiscale annuelle de France Travail, à reporter dans la case 1AP.",
       source: "impots.gouv.fr — Autres revenus imposables ; BOFiP BOI-RSA-BASE-30-50-20",
+      category: "revenus",
     });
   }
 
@@ -495,6 +497,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
         ? "Estimation calculée à partir du salaire brut annuel de ton/ta conjoint·e (environ 80% du brut) — à confirmer avec sa fiche de paie de décembre avant de déclarer."
         : `C'est le montant « Net imposable » indiqué sur le bulletin de salaire de décembre de ${ANNEE_LABEL} de ton/ta conjoint·e (cumul annuel), à reporter dans la case 1BJ.`,
       source: "impots.gouv.fr — Salaires et assimilés",
+      category: "revenus",
     });
   }
 
@@ -506,6 +509,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "C'est le montant imposable indiqué sur l'attestation fiscale annuelle de France Travail de ton/ta conjoint·e, à reporter dans la case 1BP.",
       source: "impots.gouv.fr — Autres revenus imposables ; BOFiP BOI-RSA-BASE-30-50-20",
+      category: "revenus",
     });
   }
 
@@ -517,6 +521,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "C'est le montant brut de ta pension, avant abattement, à reporter dans la case 1AS.",
       source: "impots.gouv.fr — Pensions de retraite ; CGI art. 158, 5°, a",
+      category: "revenus",
     });
   }
 
@@ -528,6 +533,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "C'est le montant brut de la pension de ton/ta conjoint·e, avant abattement, à reporter dans la case 1BS.",
       source: "impots.gouv.fr — Pensions de retraite ; CGI art. 158, 5°, a",
+      category: "revenus",
     });
   }
 
@@ -539,6 +545,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "C'est le montant brut des loyers perçus par ton foyer, hors charges et avant abattement, à reporter dans la case 4BE.",
       source: "impots.gouv.fr — Revenus fonciers ; CGI art. 32 (régime micro-foncier)",
+      category: "revenus",
     });
   }
 
@@ -550,6 +557,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "C'est le montant brut de dividendes perçus par ton foyer, avant tout prélèvement, à reporter dans la case 2DC. Si tu es en couple, ce montant peut se répartir entre vos cases respectives selon vos IFU — ça ne change pas le montant total dû, le taux du PFU étant le même quelle que soit la répartition.",
       source: "impots.gouv.fr — Revenus des valeurs et capitaux mobiliers ; CGI art. 200 A",
+      category: "revenus",
     });
   }
 
@@ -561,6 +569,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "C'est le montant net de la plus-value réalisée par ton foyer (après compensation des moins-values), tel que calculé par ta banque ou ton courtier, à reporter dans la case 3VG. Même remarque que pour les dividendes : la répartition vous/conjoint ne change pas le montant total dû.",
       source: "impots.gouv.fr — Plus-values de cession de valeurs mobilières ; CGI art. 200 A",
+      category: "revenus",
     });
   }
 
@@ -572,6 +581,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       value: activiteVous.chiffreAffaires,
       explanation: `C'est le montant brut total encaissé pour ton activité de micro-entrepreneur (${info.libelle}), avant abattement, à reporter dans la case ${info.codeVous}.`,
       source: "impots.gouv.fr — Revenus des professions non salariées ; CGI art. 50-0 / 102 ter (régime micro-entreprise)",
+      category: "revenus",
     });
   }
 
@@ -583,6 +593,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       value: activiteConjoint.chiffreAffaires,
       explanation: `C'est le montant brut total encaissé pour l'activité de micro-entrepreneur de ton/ta conjoint·e (${info.libelle}), avant abattement, à reporter dans la case ${info.codeConjoint}.`,
       source: "impots.gouv.fr — Revenus des professions non salariées ; CGI art. 50-0 / 102 ter (régime micro-entreprise)",
+      category: "revenus",
     });
   }
 
@@ -591,6 +602,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     value: taxableIncomeVous + taxableIncomeConjoint,
     explanation: `L'administration applique automatiquement un abattement de 10% sur l'ensemble des sommes touchées par chaque déclarant au titre du salaire et, le cas échéant, des allocations chômage (au moins 509€, au plus 14 555€ chacun pour les revenus de ${ANNEE_LABEL}), pour couvrir forfaitairement ses frais professionnels courants.`,
     source: "CGI art. 83, 3° ; BOFiP BOI-BAREME-000035, BOI-RSA-BASE-30-50-20",
+    category: "abattements",
   });
 
   if (pensionDeclare || pensionConjointDeclare) {
@@ -600,6 +612,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "L'administration applique un abattement de 10% distinct de celui des salaires sur l'ensemble des pensions du foyer (au moins 454€ par pensionné, mais 4 439€ au maximum pour tout le foyer, même quand les deux membres du couple touchent une pension).",
       source: "CGI art. 158, 5°, a",
+      category: "abattements",
     });
   }
 
@@ -610,6 +623,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "L'administration applique automatiquement un abattement forfaitaire de 30% sur les loyers bruts perçus, sans justificatif, tant que le total ne dépasse pas 15 000€ par an pour le foyer.",
       source: "CGI art. 32",
+      category: "abattements",
     });
   }
 
@@ -620,6 +634,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       value: taxableIncomeActiviteVous,
       explanation: `L'administration applique automatiquement un abattement forfaitaire de ${Math.round(info.taux * 100)}% sur ton chiffre d'affaires (${info.libelle}), sans justificatif — au moins 305€.`,
       source: "CGI art. 50-0 / 102 ter",
+      category: "abattements",
     });
   }
 
@@ -630,6 +645,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       value: taxableIncomeActiviteConjoint,
       explanation: `L'administration applique automatiquement un abattement forfaitaire de ${Math.round(info.taux * 100)}% sur le chiffre d'affaires de ton/ta conjoint·e (${info.libelle}), sans justificatif — au moins 305€.`,
       source: "CGI art. 50-0 / 102 ter",
+      category: "abattements",
     });
   }
 
@@ -639,6 +655,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       value: tax,
       explanation: `Calculé par tranches selon le barème progressif applicable aux revenus de ${ANNEE_LABEL}, en tenant compte de ton quotient familial (${formatParts(parts)} part${parts > 1 ? "s" : ""}) et de la décote pour les revenus modestes.`,
       source: "CGI art. 194 et 197",
+      category: "impot",
     },
   );
 
@@ -649,6 +666,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       explanation:
         "30% de tes dividendes et plus-values (12,8% d'impôt sur le revenu + 17,2% de prélèvements sociaux), à taux fixe — ce montant s'ajoute à l'impôt sur le revenu ci-dessus, il n'est pas calculé par tranches ni affecté par ton quotient familial.",
       source: "CGI art. 200 A",
+      category: "impot",
     });
   }
 
@@ -667,6 +685,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   const conseils: Conseil[] = [];
   if (includesOption(answers["activites-annexes"], "crypto")) {
     conseils.push({
+      title: "Comptes à l'étranger (crypto)",
       text: "Tu as un compte sur une plateforme crypto basée à l'étranger : aux yeux de l'administration, c'est un compte à l'étranger. Tu dois déclarer son existence chaque année avec le formulaire 3916-bis, séparément de ta déclaration de revenus — même si tu n'as rien vendu et même si le compte est presque vide (une plateforme basée en France n'est pas concernée). Oublier cette déclaration coûte 750€ par compte non déclaré, 1 500€ si sa valeur a dépassé 50 000€ à un moment de l'année. Si tu as aussi vendu des cryptos contre des euros avec un gain, il y a un formulaire séparé (2086) pour ça — non calculé par cet outil pour l'instant.",
       source: "CGI art. 1649 bis C (obligation), art. 1736 X (sanctions) ; impots.gouv.fr — Modalités de déclaration des comptes d'actifs numériques détenus à l'étranger",
     });
@@ -674,11 +693,13 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   if (includesOption(answers["activites-annexes"], "pea")) {
     if (answers["pea-cinq-ans"] === true) {
       conseils.push({
+        title: "PEA de plus de 5 ans",
         text: "Ton PEA est ouvert depuis plus de 5 ans sans clôture : ses gains sont exonérés d'impôt sur le revenu, tu n'as rien à indiquer dans cette déclaration pour lui. Seuls les prélèvements sociaux (17,2%) restent dus, mais ils sont généralement déjà prélevés directement par ta banque au moment d'un retrait — vérifie juste que ça a bien été fait avant de considérer que c'est réglé.",
         source: "CGI art. 150-0 A, III-5 ; service-public.fr — Impôt sur le revenu, plus-values sur valeurs mobilières",
       });
     } else {
       conseils.push({
+        title: "PEA de moins de 5 ans",
         text: "Un PEA de moins de 5 ans, ou avec un retrait ayant entraîné sa clôture, suit un régime plus complexe (le calcul dépend de la date d'ouverture et du motif du retrait) — cet outil ne le calcule pas. Vérifie ta situation sur impots.gouv.fr ou avec un professionnel avant de déclarer.",
         source: "CGI art. 150-0 A, III-5 ; service-public.fr — Impôt sur le revenu, plus-values sur valeurs mobilières",
       });

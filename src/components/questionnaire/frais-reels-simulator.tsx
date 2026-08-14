@@ -33,6 +33,19 @@ export function FraisReelsSimulator({
           <DeclarantSimulateur label="Ton/ta conjoint·e" abattement={comparaison.conjoint} />
         )}
         <Alert>
+          <AlertTitle>Exemples de frais réels pouvant être comptés</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4">
+              <li>Trajets domicile-travail (essence, transports en commun, usure du véhicule)</li>
+              <li>Repas pris sur le lieu de travail, au-delà de la participation de l&apos;employeur</li>
+              <li>Télétravail : matériel informatique, part du loyer et de l&apos;électricité</li>
+              <li>Matériel, outillage ou vêtements professionnels</li>
+              <li>Formation professionnelle non prise en charge par l&apos;employeur</li>
+              <li>Cotisations syndicales</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
+        <Alert>
           <AlertTitle>Avant de basculer sur l&apos;option réelle</AlertTitle>
           <AlertDescription>
             Si ton employeur te rembourse déjà une partie de ces frais (notes de frais, indemnités),
@@ -63,6 +76,10 @@ function DeclarantSimulateur({
 
   return (
     <div className="flex flex-col gap-2">
+      <p className="text-sm">
+        {label} : abattement automatique de 10% actuellement appliqué —{" "}
+        <strong className="font-mono tabular-nums">{formatEuros(abattement.abattementActuel)}</strong>
+      </p>
       <Label htmlFor={inputId}>{label} : frais professionnels réels estimés sur l&apos;année</Label>
       <Input
         id={inputId}
