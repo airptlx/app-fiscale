@@ -9,6 +9,17 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace }),
 }));
 
+async function goToFichePaie(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole("radio", { name: /Célibataire/i }));
+  await user.click(screen.getByRole("button", { name: "Suivant" }));
+
+  await screen.findByText(/Qu'est-ce que tu as touché/i);
+  await user.click(screen.getByRole("checkbox", { name: /Un salaire/i }));
+  await user.click(screen.getByRole("button", { name: "Suivant" }));
+
+  await screen.findByText(/fiche de paie de décembre/i);
+}
+
 describe("QuestionnairePage", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -26,20 +37,25 @@ describe("QuestionnairePage", () => {
     await user.click(screen.getByRole("radio", { name: /Célibataire/i }));
     await user.click(screen.getByRole("button", { name: "Suivant" }));
 
-    await screen.findByText(/fiche de paie de décembre 2025/i);
+    await screen.findByText(/Qu'est-ce que tu as touché/i);
     expect(screen.getByRole("button", { name: "Précédent" })).toBeEnabled();
+  });
+
+  it("reveals fiche-paie-disponible once 'salaire' is checked on the revenus screen", async () => {
+    const user = userEvent.setup();
+    render(<QuestionnairePage />);
+
+    await goToFichePaie(user);
   });
 
   it("Précédent returns to the previous prompt", async () => {
     const user = userEvent.setup();
     render(<QuestionnairePage />);
 
-    await user.click(await screen.findByRole("radio", { name: /Célibataire/i }));
-    await user.click(screen.getByRole("button", { name: "Suivant" }));
-    await screen.findByText(/fiche de paie de décembre 2025/i);
+    await goToFichePaie(user);
 
     await user.click(screen.getByRole("button", { name: "Précédent" }));
-    await screen.findByText(/Quelle est ta situation/i);
+    await screen.findByText(/Qu'est-ce que tu as touché/i);
   });
 
   it("redirects to / when the disclaimer has not been acknowledged", async () => {

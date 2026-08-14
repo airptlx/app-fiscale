@@ -1,4 +1,14 @@
 /**
+ * Année des revenus concernés par ce dossier (déclarés en ANNEE_REVENUS_2025 + 1).
+ * Source de vérité unique pour l'année affichée dans les questions/explications
+ * (`questions.ts`, `compute.ts`) et pour `registry.ts` — jamais dérivée de la date
+ * du jour : l'outil ne devient pertinent pour une nouvelle année que le jour où ce
+ * dossier est dupliqué et son barème mis à jour (cf. « Process de mise à jour
+ * annuelle », docs/tax-rules-sources.md), pas automatiquement au 1er janvier.
+ */
+export const ANNEE_REVENUS_2025 = 2025;
+
+/**
  * Barème progressif de l'IR, revenus 2025 (imposition 2026), 1 part de quotient familial.
  * Base légale : CGI art. 197, I-1°-A/B (loi n°2026-103 du 19/02/2026 de finances pour 2026, art. 4).
  * https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000053542636 (en vigueur depuis le 21/02/2026)

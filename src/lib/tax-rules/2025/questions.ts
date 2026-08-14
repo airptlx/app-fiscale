@@ -1,4 +1,15 @@
+import { ANNEE_REVENUS_2025 } from "./constants";
 import type { Question } from "../types";
+
+const ANNEE_LABEL = `l'année dernière (${ANNEE_REVENUS_2025})`;
+
+function situationConnue(situation: unknown): situation is "celibataire" | "couple" {
+  return situation === "celibataire" || situation === "couple";
+}
+
+function includesOption(value: unknown, option: string): boolean {
+  return Array.isArray(value) && (value as string[]).includes(option);
+}
 
 export const QUESTIONS_2025: Question[] = [
   {
@@ -28,24 +39,34 @@ export const QUESTIONS_2025: Question[] = [
         : "Indique un nombre entier positif ou nul.",
   },
   {
+    id: "revenus",
+    type: "multi-choice",
+    prompt: `Qu'est-ce que tu as touché ${ANNEE_LABEL} ?`,
+    helpText: "Coche tout ce qui s'applique — tu pourras préciser les montants juste après.",
+    options: [
+      { value: "salaire", label: "Un salaire" },
+      { value: "chomage", label: "Des allocations chômage (France Travail)" },
+      { value: "pension", label: "Une pension de retraite" },
+    ],
+    isVisible: (answers) => situationConnue(answers["situation-conjugale"]),
+  },
+  {
     id: "fiche-paie-disponible",
     type: "boolean",
-    prompt: "Tu as sous les yeux ta fiche de paie de décembre 2025 (cumul annuel) ?",
+    prompt: `Tu as sous les yeux ta fiche de paie de décembre de ${ANNEE_LABEL} (cumul annuel) ?`,
     helpText:
       "Si tu ne l'as pas encore reçue — par exemple parce que tu veux anticiper une augmentation de salaire en cours d'année — tu pourras indiquer ton salaire brut annuel à la place, et on calculera une estimation.",
     isVisible: (answers) =>
-      answers["situation-conjugale"] === "celibataire" ||
-      answers["situation-conjugale"] === "couple",
+      situationConnue(answers["situation-conjugale"]) && includesOption(answers["revenus"], "salaire"),
   },
   {
     id: "salaire-net-imposable-2025",
     type: "number",
-    prompt: "Quel est le montant total que tu as gagné en 2025 grâce à ton emploi ?",
-    helpText:
-      "Reporte le montant « Net imposable » (cumul annuel) de ta fiche de paie de décembre 2025. Attention : ce n'est pas le montant « Net à payer » viré sur ton compte — le net imposable est toujours un peu plus élevé.",
+    prompt: `Quel est le montant total que tu as gagné ${ANNEE_LABEL} grâce à ton emploi ?`,
+    helpText: `Reporte le montant « Net imposable » (cumul annuel) de ta fiche de paie de décembre de ${ANNEE_LABEL}. Attention : ce n'est pas le montant « Net à payer » viré sur ton compte — le net imposable est toujours un peu plus élevé.`,
     isVisible: (answers) =>
-      (answers["situation-conjugale"] === "celibataire" ||
-        answers["situation-conjugale"] === "couple") &&
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["revenus"], "salaire") &&
       answers["fiche-paie-disponible"] === true,
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
@@ -57,78 +78,64 @@ export const QUESTIONS_2025: Question[] = [
     helpText:
       "C'est le montant avant toute retenue, tel qu'indiqué dans ton contrat de travail. Comme tu n'as pas ta fiche de paie de décembre sous la main, on calculera une estimation à partir de ce montant — à confirmer plus tard avec ta fiche de paie réelle.",
     isVisible: (answers) =>
-      (answers["situation-conjugale"] === "celibataire" ||
-        answers["situation-conjugale"] === "couple") &&
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["revenus"], "salaire") &&
       answers["fiche-paie-disponible"] === false,
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
   },
   {
-    id: "chomage",
-    type: "boolean",
-    prompt: "Tu as aussi touché des allocations chômage (France Travail) en 2025 ?",
-    isVisible: (answers) =>
-      answers["situation-conjugale"] === "celibataire" ||
-      answers["situation-conjugale"] === "couple",
-  },
-  {
     id: "montant-chomage-2025",
     type: "number",
-    prompt: "Quel est le montant imposable de tes allocations chômage perçues en 2025 ?",
+    prompt: `Quel est le montant imposable de tes allocations chômage perçues ${ANNEE_LABEL} ?`,
     helpText:
       "Ce montant figure sur ton attestation fiscale annuelle, envoyée par France Travail (ex Pôle emploi) en début d'année suivante. Ce n'est pas le total versé sur ton compte : l'attestation indique déjà la part imposable.",
     isVisible: (answers) =>
-      (answers["situation-conjugale"] === "celibataire" ||
-        answers["situation-conjugale"] === "couple") &&
-      answers["chomage"] === true,
+      situationConnue(answers["situation-conjugale"]) && includesOption(answers["revenus"], "chomage"),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
-  },
-  {
-    id: "pension",
-    type: "boolean",
-    prompt: "Tu as perçu une pension de retraite en 2025 ?",
-    isVisible: (answers) =>
-      answers["situation-conjugale"] === "celibataire" ||
-      answers["situation-conjugale"] === "couple",
   },
   {
     id: "montant-pension-2025",
     type: "number",
-    prompt: "Quel est le montant imposable de ta pension de retraite perçue en 2025 ?",
+    prompt: `Quel est le montant imposable de ta pension de retraite perçue ${ANNEE_LABEL} ?`,
     helpText:
       "C'est le montant brut, avant tout abattement — souvent déjà pré-rempli sur ta déclaration si ta caisse de retraite l'a transmis à l'administration. Ne déduis rien toi-même : l'abattement est calculé automatiquement.",
     isVisible: (answers) =>
-      (answers["situation-conjugale"] === "celibataire" ||
-        answers["situation-conjugale"] === "couple") &&
-      answers["pension"] === true,
+      situationConnue(answers["situation-conjugale"]) && includesOption(answers["revenus"], "pension"),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
   },
   {
-    id: "conjoint-a-un-salaire",
-    type: "boolean",
-    prompt: "Ton/ta conjoint·e a aussi un salaire à déclarer ?",
+    id: "revenus-conjoint",
+    type: "multi-choice",
+    prompt: `Et ton/ta conjoint·e, qu'est-ce qu'il/elle a touché ${ANNEE_LABEL} ?`,
+    helpText: "Coche tout ce qui s'applique — tu pourras préciser les montants juste après.",
+    options: [
+      { value: "salaire", label: "Un salaire" },
+      { value: "chomage", label: "Des allocations chômage (France Travail)" },
+      { value: "pension", label: "Une pension de retraite" },
+    ],
     isVisible: (answers) => answers["situation-conjugale"] === "couple",
   },
   {
     id: "fiche-paie-disponible-conjoint",
     type: "boolean",
-    prompt: "Tu as sous les yeux la fiche de paie de décembre 2025 (cumul annuel) de ton/ta conjoint·e ?",
+    prompt: `Tu as sous les yeux la fiche de paie de décembre de ${ANNEE_LABEL} (cumul annuel) de ton/ta conjoint·e ?`,
     helpText:
       "Si tu ne l'as pas encore reçue, tu pourras indiquer son salaire brut annuel à la place, et on calculera une estimation.",
     isVisible: (answers) =>
-      answers["situation-conjugale"] === "couple" && answers["conjoint-a-un-salaire"] === true,
+      answers["situation-conjugale"] === "couple" &&
+      includesOption(answers["revenus-conjoint"], "salaire"),
   },
   {
     id: "salaire-net-imposable-2025-conjoint",
     type: "number",
-    prompt: "Quel est le montant total que ton/ta conjoint·e a gagné en 2025 grâce à son emploi ?",
-    helpText:
-      "Reporte le montant « Net imposable » (cumul annuel) de sa fiche de paie de décembre 2025. Attention : ce n'est pas le montant « Net à payer » viré sur son compte — le net imposable est toujours un peu plus élevé.",
+    prompt: `Quel est le montant total que ton/ta conjoint·e a gagné ${ANNEE_LABEL} grâce à son emploi ?`,
+    helpText: `Reporte le montant « Net imposable » (cumul annuel) de sa fiche de paie de décembre de ${ANNEE_LABEL}. Attention : ce n'est pas le montant « Net à payer » viré sur son compte — le net imposable est toujours un peu plus élevé.`,
     isVisible: (answers) =>
       answers["situation-conjugale"] === "couple" &&
-      answers["conjoint-a-un-salaire"] === true &&
+      includesOption(answers["revenus-conjoint"], "salaire") &&
       answers["fiche-paie-disponible-conjoint"] === true,
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
@@ -141,77 +148,70 @@ export const QUESTIONS_2025: Question[] = [
       "C'est le montant avant toute retenue, tel qu'indiqué dans son contrat de travail. Comme tu n'as pas sa fiche de paie de décembre sous la main, on calculera une estimation à partir de ce montant — à confirmer plus tard avec sa fiche de paie réelle.",
     isVisible: (answers) =>
       answers["situation-conjugale"] === "couple" &&
-      answers["conjoint-a-un-salaire"] === true &&
+      includesOption(answers["revenus-conjoint"], "salaire") &&
       answers["fiche-paie-disponible-conjoint"] === false,
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
   },
   {
-    id: "chomage-conjoint",
-    type: "boolean",
-    prompt: "Ton/ta conjoint·e a aussi touché des allocations chômage en 2025 ?",
-    isVisible: (answers) => answers["situation-conjugale"] === "couple",
-  },
-  {
     id: "montant-chomage-2025-conjoint",
     type: "number",
-    prompt: "Quel est le montant imposable des allocations chômage perçues par ton/ta conjoint·e en 2025 ?",
+    prompt: `Quel est le montant imposable des allocations chômage perçues par ton/ta conjoint·e ${ANNEE_LABEL} ?`,
     helpText:
       "Ce montant figure sur son attestation fiscale annuelle, envoyée par France Travail (ex Pôle emploi) en début d'année suivante. Ce n'est pas le total versé sur son compte : l'attestation indique déjà la part imposable.",
     isVisible: (answers) =>
-      answers["situation-conjugale"] === "couple" && answers["chomage-conjoint"] === true,
+      answers["situation-conjugale"] === "couple" &&
+      includesOption(answers["revenus-conjoint"], "chomage"),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
-  },
-  {
-    id: "pension-conjoint",
-    type: "boolean",
-    prompt: "Ton/ta conjoint·e a perçu une pension de retraite en 2025 ?",
-    isVisible: (answers) => answers["situation-conjugale"] === "couple",
   },
   {
     id: "montant-pension-2025-conjoint",
     type: "number",
-    prompt: "Quel est le montant imposable de la pension de retraite perçue par ton/ta conjoint·e en 2025 ?",
+    prompt: `Quel est le montant imposable de la pension de retraite perçue par ton/ta conjoint·e ${ANNEE_LABEL} ?`,
     helpText:
       "C'est le montant brut, avant tout abattement — souvent déjà pré-rempli sur ta déclaration si sa caisse de retraite l'a transmis à l'administration. Ne déduis rien toi-même : l'abattement est calculé automatiquement.",
     isVisible: (answers) =>
-      answers["situation-conjugale"] === "couple" && answers["pension-conjoint"] === true,
+      answers["situation-conjugale"] === "couple" &&
+      includesOption(answers["revenus-conjoint"], "pension"),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
   },
   {
-    id: "foncier",
-    type: "boolean",
-    prompt: "Tu as mis un logement en location (non meublée) en 2025, et perçu des loyers ?",
+    id: "activites-annexes",
+    type: "multi-choice",
+    prompt: `Ton foyer a-t-il eu d'autres revenus ${ANNEE_LABEL} ?`,
     helpText:
-      "Cette question concerne uniquement la location non meublée (location « nue »). La location meublée relève d'un régime différent, pas encore pris en charge par cet outil.",
-    isVisible: (answers) =>
-      answers["situation-conjugale"] === "celibataire" ||
-      answers["situation-conjugale"] === "couple",
+      "Loyers : uniquement la location non meublée (la location meublée n'est pas encore prise en charge). Micro-entreprise : une vraie activité enregistrée, pas un job ponctuel non déclaré.",
+    options: [
+      { value: "foncier", label: "Des loyers (location non meublée)" },
+      { value: "micro-entreprise", label: "Une activité de micro-entrepreneur (auto-entrepreneur)" },
+    ],
+    isVisible: (answers) => situationConnue(answers["situation-conjugale"]),
   },
   {
     id: "montant-foncier-2025",
     type: "number",
-    prompt: "Quel est le montant total des loyers bruts perçus par ton foyer en 2025 ?",
+    prompt: `Quel est le montant total des loyers bruts perçus par ton foyer ${ANNEE_LABEL} ?`,
     helpText:
       "Montant brut, hors charges, avant tout abattement. S'il y a plusieurs logements ou que tu es en couple, indique le total pour tout le foyer — une seule réponse suffit.",
     isVisible: (answers) =>
-      (answers["situation-conjugale"] === "celibataire" ||
-        answers["situation-conjugale"] === "couple") &&
-      answers["foncier"] === true,
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "foncier"),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
   },
   {
-    id: "activite-independante",
-    type: "boolean",
-    prompt: "Tu as une activité de micro-entrepreneur (auto-entrepreneur) en 2025 ?",
-    helpText:
-      "On parle d'une vraie activité enregistrée en micro-entreprise (auto-entrepreneur), pas d'un petit job ponctuel non déclaré.",
+    id: "qui-activite-independante",
+    type: "multi-choice",
+    prompt: "Qui a cette activité de micro-entrepreneur ?",
+    options: [
+      { value: "toi", label: "Toi" },
+      { value: "conjoint", label: "Ton/ta conjoint·e" },
+    ],
     isVisible: (answers) =>
-      answers["situation-conjugale"] === "celibataire" ||
-      answers["situation-conjugale"] === "couple",
+      answers["situation-conjugale"] === "couple" &&
+      includesOption(answers["activites-annexes"], "micro-entreprise"),
   },
   {
     id: "type-activite-independante",
@@ -232,30 +232,24 @@ export const QUESTIONS_2025: Question[] = [
       },
     ],
     isVisible: (answers) =>
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "micro-entreprise") &&
       (answers["situation-conjugale"] === "celibataire" ||
-        answers["situation-conjugale"] === "couple") &&
-      answers["activite-independante"] === true,
+        includesOption(answers["qui-activite-independante"], "toi")),
   },
   {
     id: "chiffre-affaires-independant-2025",
     type: "number",
-    prompt: "Quel est le montant total de ton chiffre d'affaires encaissé pour cette activité en 2025 ?",
+    prompt: `Quel est le montant total de ton chiffre d'affaires encaissé pour cette activité ${ANNEE_LABEL} ?`,
     helpText:
       "Montant brut total facturé et encaissé, avant tout abattement. Ne déduis aucune charge toi-même : l'abattement forfaitaire est calculé automatiquement selon ton type d'activité.",
     isVisible: (answers) =>
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "micro-entreprise") &&
       (answers["situation-conjugale"] === "celibataire" ||
-        answers["situation-conjugale"] === "couple") &&
-      answers["activite-independante"] === true,
+        includesOption(answers["qui-activite-independante"], "toi")),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
-  },
-  {
-    id: "activite-independante-conjoint",
-    type: "boolean",
-    prompt: "Ton/ta conjoint·e a aussi une activité de micro-entrepreneur (auto-entrepreneur) en 2025 ?",
-    helpText:
-      "On parle d'une vraie activité enregistrée en micro-entreprise (auto-entrepreneur), pas d'un petit job ponctuel non déclaré.",
-    isVisible: (answers) => answers["situation-conjugale"] === "couple",
   },
   {
     id: "type-activite-independante-conjoint",
@@ -277,17 +271,19 @@ export const QUESTIONS_2025: Question[] = [
     ],
     isVisible: (answers) =>
       answers["situation-conjugale"] === "couple" &&
-      answers["activite-independante-conjoint"] === true,
+      includesOption(answers["activites-annexes"], "micro-entreprise") &&
+      includesOption(answers["qui-activite-independante"], "conjoint"),
   },
   {
     id: "chiffre-affaires-independant-2025-conjoint",
     type: "number",
-    prompt: "Quel est le montant total du chiffre d'affaires encaissé par ton/ta conjoint·e pour cette activité en 2025 ?",
+    prompt: `Quel est le montant total du chiffre d'affaires encaissé par ton/ta conjoint·e pour cette activité ${ANNEE_LABEL} ?`,
     helpText:
       "Montant brut total facturé et encaissé, avant tout abattement. Ne déduis aucune charge toi-même : l'abattement forfaitaire est calculé automatiquement selon le type d'activité.",
     isVisible: (answers) =>
       answers["situation-conjugale"] === "couple" &&
-      answers["activite-independante-conjoint"] === true,
+      includesOption(answers["activites-annexes"], "micro-entreprise") &&
+      includesOption(answers["qui-activite-independante"], "conjoint"),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
   },

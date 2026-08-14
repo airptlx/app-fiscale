@@ -87,6 +87,7 @@ describe("computeDeclaration (2025, célibataire / un salaire / abattement 10%)"
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 28_000,
       },
@@ -105,6 +106,7 @@ describe("computeDeclaration (2025, célibataire / un salaire / abattement 10%)"
       {
         "situation-conjugale": "celibataire",
         "nombre-enfants-a-charge": 2,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 28_000,
       },
@@ -121,6 +123,7 @@ describe("computeDeclaration (2025, célibataire / un salaire / abattement 10%)"
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": false,
         "salaire-brut-annuel-2025": 35_000,
       },
@@ -133,6 +136,19 @@ describe("computeDeclaration (2025, célibataire / un salaire / abattement 10%)"
     ]);
     expect(result.warnings).toHaveLength(1);
     expect(result.warnings?.[0]).toMatch(/estimation/i);
+  });
+
+  it("treats an unchecked salaire as 0€, without an unwarranted estimation warning", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["chomage"],
+        "montant-chomage-2025": 12_000,
+      },
+      2025,
+    );
+    expect(result.lines[0]).toEqual(expect.objectContaining({ code: "1AJ", value: 0 }));
+    expect(result.warnings).toBeUndefined();
   });
 
   it("rejects an unsupported tax year", () => {
@@ -168,9 +184,10 @@ describe("computeDeclaration (2025, couple, second salary, quotient familial)", 
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 0,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "conjoint-a-un-salaire": true,
+        "revenus-conjoint": ["salaire"],
         "fiche-paie-disponible-conjoint": true,
         "salaire-net-imposable-2025-conjoint": 20_000,
       },
@@ -189,9 +206,10 @@ describe("computeDeclaration (2025, couple, second salary, quotient familial)", 
     const result = computeDeclaration(
       {
         "situation-conjugale": "couple",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 45_000,
-        "conjoint-a-un-salaire": false,
+        "revenus-conjoint": [],
       },
       2025,
     );
@@ -208,9 +226,10 @@ describe("computeDeclaration (2025, couple, second salary, quotient familial)", 
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 1,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 30_000,
-        "conjoint-a-un-salaire": true,
+        "revenus-conjoint": ["salaire"],
         "fiche-paie-disponible-conjoint": true,
         "salaire-net-imposable-2025-conjoint": 30_000,
       },
@@ -226,9 +245,10 @@ describe("computeDeclaration (2025, couple, second salary, quotient familial)", 
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 2,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 90_000,
-        "conjoint-a-un-salaire": true,
+        "revenus-conjoint": ["salaire"],
         "fiche-paie-disponible-conjoint": true,
         "salaire-net-imposable-2025-conjoint": 90_000,
       },
@@ -246,17 +266,17 @@ describe("computeDeclaration (2025, couple, second salary, quotient familial)", 
 });
 
 describe("resolveChomage", () => {
-  it("is 0 when chomage is not declared", () => {
+  it("is 0 when chomage is not checked", () => {
     expect(resolveChomage({})).toBe(0);
-    expect(resolveChomage({ chomage: false, "montant-chomage-2025": 5_000 })).toBe(0);
+    expect(resolveChomage({ revenus: ["salaire"], "montant-chomage-2025": 5_000 })).toBe(0);
   });
-  it("reads the declared amount when chomage is true", () => {
-    expect(resolveChomage({ chomage: true, "montant-chomage-2025": 5_000 })).toBe(5_000);
+  it("reads the declared amount when chomage is checked", () => {
+    expect(resolveChomage({ revenus: ["chomage"], "montant-chomage-2025": 5_000 })).toBe(5_000);
   });
   it("supports the conjoint suffix independently", () => {
     expect(
       resolveChomage(
-        { "chomage-conjoint": true, "montant-chomage-2025-conjoint": 8_000 },
+        { "revenus-conjoint": ["chomage"], "montant-chomage-2025-conjoint": 8_000 },
         "-conjoint",
       ),
     ).toBe(8_000);
@@ -268,9 +288,9 @@ describe("computeDeclaration (2025, allocations chômage — case 1AP/1BP)", () 
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire", "chomage"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        chomage: true,
         "montant-chomage-2025": 5_000,
       },
       2025,
@@ -287,9 +307,7 @@ describe("computeDeclaration (2025, allocations chômage — case 1AP/1BP)", () 
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
-        "fiche-paie-disponible": true,
-        "salaire-net-imposable-2025": 0,
-        chomage: true,
+        revenus: ["chomage"],
         "montant-chomage-2025": 12_000,
       },
       2025,
@@ -303,10 +321,10 @@ describe("computeDeclaration (2025, allocations chômage — case 1AP/1BP)", () 
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 0,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "conjoint-a-un-salaire": false,
-        "chomage-conjoint": true,
+        "revenus-conjoint": ["chomage"],
         "montant-chomage-2025-conjoint": 8_000,
       },
       2025,
@@ -321,10 +339,11 @@ describe("computeDeclaration (2025, allocations chômage — case 1AP/1BP)", () 
     expect(taxableIncomeLine?.value).toBeGreaterThan(computeTaxableIncome(20_000));
   });
 
-  it("does not add 1AP/1BP lines when chômage is not declared (regression)", () => {
+  it("does not add 1AP/1BP lines when chômage is not checked (regression)", () => {
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 28_000,
       },
@@ -335,17 +354,17 @@ describe("computeDeclaration (2025, allocations chômage — case 1AP/1BP)", () 
 });
 
 describe("resolvePension", () => {
-  it("is 0 when pension is not declared", () => {
+  it("is 0 when pension is not checked", () => {
     expect(resolvePension({})).toBe(0);
-    expect(resolvePension({ pension: false, "montant-pension-2025": 10_000 })).toBe(0);
+    expect(resolvePension({ revenus: ["salaire"], "montant-pension-2025": 10_000 })).toBe(0);
   });
-  it("reads the declared amount when pension is true", () => {
-    expect(resolvePension({ pension: true, "montant-pension-2025": 10_000 })).toBe(10_000);
+  it("reads the declared amount when pension is checked", () => {
+    expect(resolvePension({ revenus: ["pension"], "montant-pension-2025": 10_000 })).toBe(10_000);
   });
   it("supports the conjoint suffix independently", () => {
     expect(
       resolvePension(
-        { "pension-conjoint": true, "montant-pension-2025-conjoint": 12_000 },
+        { "revenus-conjoint": ["pension"], "montant-pension-2025-conjoint": 12_000 },
         "-conjoint",
       ),
     ).toBe(12_000);
@@ -389,9 +408,9 @@ describe("computeDeclaration (2025, pensions de retraite — case 1AS/1BS)", () 
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire", "pension"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        pension: true,
         "montant-pension-2025": 2_000,
       },
       2025,
@@ -410,10 +429,10 @@ describe("computeDeclaration (2025, pensions de retraite — case 1AS/1BS)", () 
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 0,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "conjoint-a-un-salaire": false,
-        "pension-conjoint": true,
+        "revenus-conjoint": ["pension"],
         "montant-pension-2025-conjoint": 10_000,
       },
       2025,
@@ -426,10 +445,11 @@ describe("computeDeclaration (2025, pensions de retraite — case 1AS/1BS)", () 
     expect(bsLine).toEqual(expect.objectContaining({ value: 10_000 }));
   });
 
-  it("does not add pension lines when no pension is declared (regression)", () => {
+  it("does not add pension lines when no pension is checked (regression)", () => {
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 28_000,
       },
@@ -515,9 +535,9 @@ describe("computeDeclaration — tauxPrelevementSource wiring", () => {
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire", "chomage"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        chomage: true,
         "montant-chomage-2025": 5_000,
       },
       2025,
@@ -530,9 +550,10 @@ describe("computeDeclaration — tauxPrelevementSource wiring", () => {
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 0,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "conjoint-a-un-salaire": true,
+        "revenus-conjoint": ["salaire"],
         "fiche-paie-disponible-conjoint": true,
         "salaire-net-imposable-2025-conjoint": 20_000,
       },
@@ -545,12 +566,12 @@ describe("computeDeclaration — tauxPrelevementSource wiring", () => {
 });
 
 describe("resolveFoncier", () => {
-  it("is 0 when foncier is not declared", () => {
+  it("is 0 when foncier is not checked", () => {
     expect(resolveFoncier({})).toBe(0);
-    expect(resolveFoncier({ foncier: false, "montant-foncier-2025": 6_000 })).toBe(0);
+    expect(resolveFoncier({ "activites-annexes": ["micro-entreprise"], "montant-foncier-2025": 6_000 })).toBe(0);
   });
-  it("reads the declared amount when foncier is true", () => {
-    expect(resolveFoncier({ foncier: true, "montant-foncier-2025": 6_000 })).toBe(6_000);
+  it("reads the declared amount when foncier is checked", () => {
+    expect(resolveFoncier({ "activites-annexes": ["foncier"], "montant-foncier-2025": 6_000 })).toBe(6_000);
   });
 });
 
@@ -575,9 +596,10 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        foncier: true,
+        "activites-annexes": ["foncier"],
         "montant-foncier-2025": 6_000,
       },
       2025,
@@ -596,9 +618,10 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
       computeDeclaration(
         {
           "situation-conjugale": "celibataire",
+          revenus: ["salaire"],
           "fiche-paie-disponible": true,
           "salaire-net-imposable-2025": 20_000,
-          foncier: true,
+          "activites-annexes": ["foncier"],
           "montant-foncier-2025": 15_001,
         },
         2025,
@@ -611,9 +634,10 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
       computeDeclaration(
         {
           "situation-conjugale": "celibataire",
+          revenus: ["salaire"],
           "fiche-paie-disponible": true,
           "salaire-net-imposable-2025": 20_000,
-          foncier: true,
+          "activites-annexes": ["foncier"],
           "montant-foncier-2025": 15_000,
         },
         2025,
@@ -621,10 +645,11 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
     ).not.toThrow();
   });
 
-  it("does not add foncier lines when not declared (regression)", () => {
+  it("does not add foncier lines when not checked (regression)", () => {
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 28_000,
       },
@@ -639,12 +664,13 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 0,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "conjoint-a-un-salaire": true,
+        "revenus-conjoint": ["salaire"],
         "fiche-paie-disponible-conjoint": true,
         "salaire-net-imposable-2025-conjoint": 20_000,
-        foncier: true,
+        "activites-annexes": ["foncier"],
         "montant-foncier-2025": 6_000,
       },
       2025,
@@ -660,9 +686,10 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 0,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "conjoint-a-un-salaire": true,
+        "revenus-conjoint": ["salaire"],
         "fiche-paie-disponible-conjoint": true,
         "salaire-net-imposable-2025-conjoint": 20_000,
       },
@@ -674,31 +701,49 @@ describe("computeDeclaration (2025, revenus fonciers — case 4BE, régime micro
 });
 
 describe("resolveActiviteIndependante", () => {
-  it("is undefined/0 when not declared", () => {
+  it("is undefined/0 when micro-entreprise is not checked", () => {
     expect(resolveActiviteIndependante({})).toEqual({ type: undefined, chiffreAffaires: 0 });
     expect(
       resolveActiviteIndependante({
-        "activite-independante": false,
+        "activites-annexes": ["foncier"],
         "chiffre-affaires-independant-2025": 10_000,
       }),
     ).toEqual({ type: undefined, chiffreAffaires: 0 });
   });
 
-  it("reads the declared type and amount when declared", () => {
+  it("reads the declared type and amount for a célibataire (no qui-activite-independante needed)", () => {
     expect(
       resolveActiviteIndependante({
-        "activite-independante": true,
+        "situation-conjugale": "celibataire",
+        "activites-annexes": ["micro-entreprise"],
         "type-activite-independante": "vente",
         "chiffre-affaires-independant-2025": 10_000,
       }),
     ).toEqual({ type: "vente", chiffreAffaires: 10_000 });
   });
 
-  it("supports the conjoint suffix independently", () => {
+  it("is undefined/0 for a couple when 'qui-activite-independante' does not include the requested person", () => {
     expect(
       resolveActiviteIndependante(
         {
-          "activite-independante-conjoint": true,
+          "situation-conjugale": "couple",
+          "activites-annexes": ["micro-entreprise"],
+          "qui-activite-independante": ["toi"],
+          "type-activite-independante-conjoint": "liberale",
+          "chiffre-affaires-independant-2025-conjoint": 15_000,
+        },
+        "-conjoint",
+      ),
+    ).toEqual({ type: undefined, chiffreAffaires: 0 });
+  });
+
+  it("supports the conjoint suffix independently when 'qui-activite-independante' includes 'conjoint'", () => {
+    expect(
+      resolveActiviteIndependante(
+        {
+          "situation-conjugale": "couple",
+          "activites-annexes": ["micro-entreprise"],
+          "qui-activite-independante": ["conjoint"],
           "type-activite-independante-conjoint": "liberale",
           "chiffre-affaires-independant-2025-conjoint": 15_000,
         },
@@ -741,9 +786,10 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "activite-independante": true,
+        "activites-annexes": ["micro-entreprise"],
         "type-activite-independante": "vente",
         "chiffre-affaires-independant-2025": 10_000,
       },
@@ -762,9 +808,10 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
     const service = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "activite-independante": true,
+        "activites-annexes": ["micro-entreprise"],
         "type-activite-independante": "service",
         "chiffre-affaires-independant-2025": 10_000,
       },
@@ -775,9 +822,10 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
     const liberale = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "activite-independante": true,
+        "activites-annexes": ["micro-entreprise"],
         "type-activite-independante": "liberale",
         "chiffre-affaires-independant-2025": 10_000,
       },
@@ -791,9 +839,10 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
       computeDeclaration(
         {
           "situation-conjugale": "celibataire",
+          revenus: ["salaire"],
           "fiche-paie-disponible": true,
           "salaire-net-imposable-2025": 20_000,
-          "activite-independante": true,
+          "activites-annexes": ["micro-entreprise"],
           "type-activite-independante": "service",
           "chiffre-affaires-independant-2025": 77_701,
         },
@@ -807,9 +856,10 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
       computeDeclaration(
         {
           "situation-conjugale": "celibataire",
+          revenus: ["salaire"],
           "fiche-paie-disponible": true,
           "salaire-net-imposable-2025": 20_000,
-          "activite-independante": true,
+          "activites-annexes": ["micro-entreprise"],
           "type-activite-independante": "vente",
           "chiffre-affaires-independant-2025": 188_700,
         },
@@ -823,13 +873,14 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
       {
         "situation-conjugale": "couple",
         "nombre-enfants-a-charge": 0,
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 20_000,
-        "conjoint-a-un-salaire": false,
-        "activite-independante": true,
+        "revenus-conjoint": [],
+        "activites-annexes": ["micro-entreprise"],
+        "qui-activite-independante": ["toi", "conjoint"],
         "type-activite-independante": "vente",
         "chiffre-affaires-independant-2025": 10_000,
-        "activite-independante-conjoint": true,
         "type-activite-independante-conjoint": "liberale",
         "chiffre-affaires-independant-2025-conjoint": 15_000,
       },
@@ -842,10 +893,11 @@ describe("computeDeclaration (2025, activité indépendante — micro-BIC/micro-
     expect(result.tauxPrelevementSource.conjoint).toBeDefined();
   });
 
-  it("does not add activité indépendante lines when not declared (regression)", () => {
+  it("does not add activité indépendante lines when not checked (regression)", () => {
     const result = computeDeclaration(
       {
         "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
         "fiche-paie-disponible": true,
         "salaire-net-imposable-2025": 28_000,
       },

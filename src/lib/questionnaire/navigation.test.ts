@@ -24,259 +24,160 @@ describe("getVisibleQuestions", () => {
     ]);
   });
 
-  it("reveals fiche-paie-disponible, chomage, pension, foncier and activite-independante directly for a célibataire (no children question)", () => {
-    // chomage, pension, foncier et activite-independante ne dépendent que de
-    // situation-conjugale (comme fiche-paie-disponible), donc visibles dès ce
-    // stade même si posées plus tard dans l'ordre du tableau.
+  it("reveals revenus and activites-annexes directly for a célibataire (no children question)", () => {
     const answers: Answers = { "situation-conjugale": "celibataire" };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
-      "fiche-paie-disponible",
-      "chomage",
-      "pension",
-      "foncier",
-      "activite-independante",
+      "revenus",
+      "activites-annexes",
     ]);
   });
 
-  it("reveals nombre-enfants-a-charge, fiche-paie-disponible, chomage, pension, conjoint-a-un-salaire, chomage-conjoint, pension-conjoint, foncier and both activite-independante questions for a couple", () => {
-    // conjoint-a-un-salaire, chomage-conjoint, pension-conjoint, foncier et les
-    // deux activite-independante ne dépendent que de situation-conjugale : tous
-    // visibles dès ce stade.
+  it("reveals nombre-enfants-a-charge, revenus, revenus-conjoint and activites-annexes for a couple", () => {
     const answers: Answers = { "situation-conjugale": "couple" };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
       "nombre-enfants-a-charge",
-      "fiche-paie-disponible",
-      "chomage",
-      "pension",
-      "conjoint-a-un-salaire",
-      "chomage-conjoint",
-      "pension-conjoint",
-      "foncier",
-      "activite-independante",
-      "activite-independante-conjoint",
+      "revenus",
+      "revenus-conjoint",
+      "activites-annexes",
     ]);
+  });
+
+  it("reveals fiche-paie-disponible once revenus includes salaire", () => {
+    const answers: Answers = { "situation-conjugale": "celibataire", revenus: ["salaire"] };
+    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
+      "situation-conjugale",
+      "revenus",
+      "fiche-paie-disponible",
+      "activites-annexes",
+    ]);
+  });
+
+  it("does not reveal fiche-paie-disponible when revenus does not include salaire", () => {
+    const answers: Answers = { "situation-conjugale": "celibataire", revenus: ["chomage"] };
+    expect(ids(getVisibleQuestions(Q, answers))).not.toContain("fiche-paie-disponible");
+    expect(ids(getVisibleQuestions(Q, answers))).toContain("montant-chomage-2025");
   });
 
   it("reveals the net-imposable question when the payslip is available", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
+      revenus: ["salaire"],
       "fiche-paie-disponible": true,
     };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
+      "revenus",
       "fiche-paie-disponible",
       "salaire-net-imposable-2025",
-      "chomage",
-      "pension",
-      "foncier",
-      "activite-independante",
+      "activites-annexes",
     ]);
   });
 
   it("reveals the brut question instead when the payslip is not available", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
+      revenus: ["salaire"],
       "fiche-paie-disponible": false,
     };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
+      "revenus",
       "fiche-paie-disponible",
       "salaire-brut-annuel-2025",
-      "chomage",
-      "pension",
-      "foncier",
-      "activite-independante",
+      "activites-annexes",
     ]);
   });
 
-  it("reveals the montant-chomage-2025 question once chomage is answered true", () => {
+  it("reveals montant-chomage-2025 and montant-pension-2025 together when both are checked", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      chomage: true,
+      revenus: ["chomage", "pension"],
     };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
-      "fiche-paie-disponible",
-      "salaire-net-imposable-2025",
-      "chomage",
+      "revenus",
       "montant-chomage-2025",
-      "pension",
-      "foncier",
-      "activite-independante",
-    ]);
-  });
-
-  it("does not reveal montant-chomage-2025 when chomage is false", () => {
-    const answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      chomage: false,
-    };
-    expect(ids(getVisibleQuestions(Q, answers))).not.toContain("montant-chomage-2025");
-  });
-
-  it("reveals the montant-pension-2025 question once pension is answered true", () => {
-    const answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      chomage: false,
-      pension: true,
-    };
-    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
-      "situation-conjugale",
-      "fiche-paie-disponible",
-      "salaire-net-imposable-2025",
-      "chomage",
-      "pension",
       "montant-pension-2025",
-      "foncier",
-      "activite-independante",
+      "activites-annexes",
     ]);
   });
 
-  it("does not reveal montant-pension-2025 when pension is false", () => {
+  it("reveals montant-foncier-2025 once activites-annexes includes foncier", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      pension: false,
-    };
-    expect(ids(getVisibleQuestions(Q, answers))).not.toContain("montant-pension-2025");
-  });
-
-  it("reveals the montant-foncier-2025 question once foncier is answered true", () => {
-    const answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      chomage: false,
-      pension: false,
-      foncier: true,
+      revenus: [],
+      "activites-annexes": ["foncier"],
     };
     expect(ids(getVisibleQuestions(Q, answers))).toEqual([
       "situation-conjugale",
-      "fiche-paie-disponible",
-      "salaire-net-imposable-2025",
-      "chomage",
-      "pension",
-      "foncier",
+      "revenus",
+      "activites-annexes",
       "montant-foncier-2025",
-      "activite-independante",
     ]);
   });
 
-  it("does not reveal montant-foncier-2025 when foncier is false", () => {
+  it("reveals type/chiffre-affaires directly for a célibataire once micro-entreprise is checked (no qui question)", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      foncier: false,
+      revenus: [],
+      "activites-annexes": ["micro-entreprise"],
     };
-    expect(ids(getVisibleQuestions(Q, answers))).not.toContain("montant-foncier-2025");
+    const visible = ids(getVisibleQuestions(Q, answers));
+    expect(visible).not.toContain("qui-activite-independante");
+    expect(visible).toContain("type-activite-independante");
+    expect(visible).toContain("chiffre-affaires-independant-2025");
   });
 
-  it("reveals conjoint-a-un-salaire, chomage-conjoint and pension-conjoint once the couple's own salary question is answered", () => {
+  it("reveals qui-activite-independante for a couple once micro-entreprise is checked, but not the type/chiffre-affaires questions yet", () => {
     const answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 0,
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 30_000,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": ["micro-entreprise"],
     };
-    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
-      "situation-conjugale",
-      "nombre-enfants-a-charge",
-      "fiche-paie-disponible",
-      "salaire-net-imposable-2025",
-      "chomage",
-      "pension",
-      "conjoint-a-un-salaire",
-      "chomage-conjoint",
-      "pension-conjoint",
-      "foncier",
-      "activite-independante",
-      "activite-independante-conjoint",
-    ]);
+    const visible = ids(getVisibleQuestions(Q, answers));
+    expect(visible).toContain("qui-activite-independante");
+    expect(visible).not.toContain("type-activite-independante");
+    expect(visible).not.toContain("type-activite-independante-conjoint");
   });
 
-  it("is complete without conjoint salary questions when the conjoint has no salary", () => {
+  it("reveals only the 'toi' detail questions when qui-activite-independante is ['toi']", () => {
     const answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 0,
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 30_000,
-      "conjoint-a-un-salaire": false,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": ["micro-entreprise"],
+      "qui-activite-independante": ["toi"],
     };
-    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
-      "situation-conjugale",
-      "nombre-enfants-a-charge",
-      "fiche-paie-disponible",
-      "salaire-net-imposable-2025",
-      "chomage",
-      "pension",
-      "conjoint-a-un-salaire",
-      "chomage-conjoint",
-      "pension-conjoint",
-      "foncier",
-      "activite-independante",
-      "activite-independante-conjoint",
-    ]);
+    const visible = ids(getVisibleQuestions(Q, answers));
+    expect(visible).toContain("type-activite-independante");
+    expect(visible).toContain("chiffre-affaires-independant-2025");
+    expect(visible).not.toContain("type-activite-independante-conjoint");
+    expect(visible).not.toContain("chiffre-affaires-independant-2025-conjoint");
   });
 
-  it("reveals montant-chomage-2025-conjoint once chomage-conjoint is answered true, independently of conjoint-a-un-salaire", () => {
+  it("reveals both sides' detail questions when qui-activite-independante is ['toi', 'conjoint']", () => {
     const answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 0,
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 30_000,
-      "conjoint-a-un-salaire": false,
-      "chomage-conjoint": true,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": ["micro-entreprise"],
+      "qui-activite-independante": ["toi", "conjoint"],
     };
-    expect(ids(getVisibleQuestions(Q, answers))).toContain("montant-chomage-2025-conjoint");
-  });
-
-  it("reveals montant-pension-2025-conjoint once pension-conjoint is answered true, independently of conjoint-a-un-salaire", () => {
-    const answers: Answers = {
-      "situation-conjugale": "couple",
-      "nombre-enfants-a-charge": 0,
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 30_000,
-      "conjoint-a-un-salaire": false,
-      "pension-conjoint": true,
-    };
-    expect(ids(getVisibleQuestions(Q, answers))).toContain("montant-pension-2025-conjoint");
-  });
-
-  it("walks the full conjoint branch (fiche-paie-disponible-conjoint then net-imposable-conjoint)", () => {
-    const answers: Answers = {
-      "situation-conjugale": "couple",
-      "nombre-enfants-a-charge": 0,
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 30_000,
-      "conjoint-a-un-salaire": true,
-      "fiche-paie-disponible-conjoint": true,
-    };
-    expect(ids(getVisibleQuestions(Q, answers))).toEqual([
-      "situation-conjugale",
-      "nombre-enfants-a-charge",
-      "fiche-paie-disponible",
-      "salaire-net-imposable-2025",
-      "chomage",
-      "pension",
-      "conjoint-a-un-salaire",
-      "fiche-paie-disponible-conjoint",
-      "salaire-net-imposable-2025-conjoint",
-      "chomage-conjoint",
-      "pension-conjoint",
-      "foncier",
-      "activite-independante",
-      "activite-independante-conjoint",
-    ]);
+    const visible = ids(getVisibleQuestions(Q, answers));
+    expect(visible).toEqual(
+      expect.arrayContaining([
+        "type-activite-independante",
+        "chiffre-affaires-independant-2025",
+        "type-activite-independante-conjoint",
+        "chiffre-affaires-independant-2025-conjoint",
+      ]),
+    );
   });
 });
 
@@ -289,27 +190,21 @@ describe("getNextQuestion", () => {
     expect(getNextQuestion(Q, { "situation-conjugale": "autre" })).toBeUndefined();
   });
 
-  it("walks the célibataire exact-path branch to completion, including chomage, pension, foncier and activité indépendante", () => {
+  it("walks a full célibataire branch: salaire + chômage, foncier, micro-entreprise", () => {
     let answers: Answers = {};
     answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
+    expect(getNextQuestion(Q, answers)?.id).toBe("revenus");
+    answers = answerQuestion(Q, answers, "revenus", ["salaire", "chomage"]);
     expect(getNextQuestion(Q, answers)?.id).toBe("fiche-paie-disponible");
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("salaire-net-imposable-2025");
     answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 28_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("chomage");
-    answers = answerQuestion(Q, answers, "chomage", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("montant-chomage-2025");
     answers = answerQuestion(Q, answers, "montant-chomage-2025", 3_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("pension");
-    answers = answerQuestion(Q, answers, "pension", true);
-    expect(getNextQuestion(Q, answers)?.id).toBe("montant-pension-2025");
-    answers = answerQuestion(Q, answers, "montant-pension-2025", 2_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("foncier");
-    answers = answerQuestion(Q, answers, "foncier", true);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activites-annexes");
+    answers = answerQuestion(Q, answers, "activites-annexes", ["foncier", "micro-entreprise"]);
     expect(getNextQuestion(Q, answers)?.id).toBe("montant-foncier-2025");
     answers = answerQuestion(Q, answers, "montant-foncier-2025", 6_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante");
-    answers = answerQuestion(Q, answers, "activite-independante", true);
     expect(getNextQuestion(Q, answers)?.id).toBe("type-activite-independante");
     answers = answerQuestion(Q, answers, "type-activite-independante", "vente");
     expect(getNextQuestion(Q, answers)?.id).toBe("chiffre-affaires-independant-2025");
@@ -317,102 +212,42 @@ describe("getNextQuestion", () => {
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
-  it("walks the célibataire estimation branch to completion, skipping the amount questions when chomage/pension/foncier/activite-independante are false", () => {
+  it("walks a célibataire branch with nothing checked anywhere (all multi-choice answers empty)", () => {
     let answers: Answers = {};
     answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
-    answers = answerQuestion(Q, answers, "fiche-paie-disponible", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("salaire-brut-annuel-2025");
-    answers = answerQuestion(Q, answers, "salaire-brut-annuel-2025", 35_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("chomage");
-    answers = answerQuestion(Q, answers, "chomage", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("pension");
-    answers = answerQuestion(Q, answers, "pension", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("foncier");
-    answers = answerQuestion(Q, answers, "foncier", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante");
-    answers = answerQuestion(Q, answers, "activite-independante", false);
+    answers = answerQuestion(Q, answers, "revenus", []);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activites-annexes");
+    answers = answerQuestion(Q, answers, "activites-annexes", []);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
   });
 
-  it("walks the couple branch to completion when the conjoint has no salary", () => {
+  it("walks a full couple branch, with the micro-entreprise activity split between both", () => {
     let answers: Answers = {};
     answers = answerQuestion(Q, answers, "situation-conjugale", "couple");
     expect(getNextQuestion(Q, answers)?.id).toBe("nombre-enfants-a-charge");
-    answers = answerQuestion(Q, answers, "nombre-enfants-a-charge", 2);
-    answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
-    answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 30_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("chomage");
-    answers = answerQuestion(Q, answers, "chomage", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("pension");
-    answers = answerQuestion(Q, answers, "pension", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("conjoint-a-un-salaire");
-    answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("chomage-conjoint");
-    answers = answerQuestion(Q, answers, "chomage-conjoint", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("pension-conjoint");
-    answers = answerQuestion(Q, answers, "pension-conjoint", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("foncier");
-    answers = answerQuestion(Q, answers, "foncier", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante");
-    answers = answerQuestion(Q, answers, "activite-independante", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante-conjoint");
-    answers = answerQuestion(Q, answers, "activite-independante-conjoint", false);
-    expect(getNextQuestion(Q, answers)).toBeUndefined();
-  });
-
-  it("walks the couple branch to completion when the conjoint has a salary", () => {
-    let answers: Answers = {};
-    answers = answerQuestion(Q, answers, "situation-conjugale", "couple");
     answers = answerQuestion(Q, answers, "nombre-enfants-a-charge", 0);
+    expect(getNextQuestion(Q, answers)?.id).toBe("revenus");
+    answers = answerQuestion(Q, answers, "revenus", ["salaire"]);
+    expect(getNextQuestion(Q, answers)?.id).toBe("fiche-paie-disponible");
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
     answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 30_000);
-    answers = answerQuestion(Q, answers, "chomage", false);
-    answers = answerQuestion(Q, answers, "pension", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("conjoint-a-un-salaire");
-    answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", true);
-    expect(getNextQuestion(Q, answers)?.id).toBe("fiche-paie-disponible-conjoint");
-    answers = answerQuestion(Q, answers, "fiche-paie-disponible-conjoint", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("salaire-brut-annuel-2025-conjoint");
-    answers = answerQuestion(Q, answers, "salaire-brut-annuel-2025-conjoint", 40_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("chomage-conjoint");
-    answers = answerQuestion(Q, answers, "chomage-conjoint", true);
-    expect(getNextQuestion(Q, answers)?.id).toBe("montant-chomage-2025-conjoint");
-    answers = answerQuestion(Q, answers, "montant-chomage-2025-conjoint", 6_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("pension-conjoint");
-    answers = answerQuestion(Q, answers, "pension-conjoint", true);
+    expect(getNextQuestion(Q, answers)?.id).toBe("revenus-conjoint");
+    answers = answerQuestion(Q, answers, "revenus-conjoint", ["pension"]);
     expect(getNextQuestion(Q, answers)?.id).toBe("montant-pension-2025-conjoint");
-    answers = answerQuestion(Q, answers, "montant-pension-2025-conjoint", 8_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("foncier");
-    answers = answerQuestion(Q, answers, "foncier", true);
-    expect(getNextQuestion(Q, answers)?.id).toBe("montant-foncier-2025");
-    answers = answerQuestion(Q, answers, "montant-foncier-2025", 6_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante");
-    answers = answerQuestion(Q, answers, "activite-independante", true);
+    answers = answerQuestion(Q, answers, "montant-pension-2025-conjoint", 12_000);
+    expect(getNextQuestion(Q, answers)?.id).toBe("activites-annexes");
+    answers = answerQuestion(Q, answers, "activites-annexes", ["micro-entreprise"]);
+    expect(getNextQuestion(Q, answers)?.id).toBe("qui-activite-independante");
+    answers = answerQuestion(Q, answers, "qui-activite-independante", ["toi", "conjoint"]);
     expect(getNextQuestion(Q, answers)?.id).toBe("type-activite-independante");
     answers = answerQuestion(Q, answers, "type-activite-independante", "service");
     expect(getNextQuestion(Q, answers)?.id).toBe("chiffre-affaires-independant-2025");
-    answers = answerQuestion(Q, answers, "chiffre-affaires-independant-2025", 5_000);
-    expect(getNextQuestion(Q, answers)?.id).toBe("activite-independante-conjoint");
-    answers = answerQuestion(Q, answers, "activite-independante-conjoint", true);
+    answers = answerQuestion(Q, answers, "chiffre-affaires-independant-2025", 15_000);
     expect(getNextQuestion(Q, answers)?.id).toBe("type-activite-independante-conjoint");
     answers = answerQuestion(Q, answers, "type-activite-independante-conjoint", "liberale");
     expect(getNextQuestion(Q, answers)?.id).toBe("chiffre-affaires-independant-2025-conjoint");
-    answers = answerQuestion(Q, answers, "chiffre-affaires-independant-2025-conjoint", 3_000);
+    answers = answerQuestion(Q, answers, "chiffre-affaires-independant-2025-conjoint", 8_000);
     expect(getNextQuestion(Q, answers)).toBeUndefined();
-  });
-
-  it("reaches chomage-conjoint and pension-conjoint even when the conjoint never answers the salary question", () => {
-    let answers: Answers = {};
-    answers = answerQuestion(Q, answers, "situation-conjugale", "couple");
-    answers = answerQuestion(Q, answers, "nombre-enfants-a-charge", 0);
-    answers = answerQuestion(Q, answers, "fiche-paie-disponible", true);
-    answers = answerQuestion(Q, answers, "salaire-net-imposable-2025", 30_000);
-    answers = answerQuestion(Q, answers, "chomage", false);
-    answers = answerQuestion(Q, answers, "pension", false);
-    answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("chomage-conjoint");
-    answers = answerQuestion(Q, answers, "chomage-conjoint", false);
-    expect(getNextQuestion(Q, answers)?.id).toBe("pension-conjoint");
   });
 });
 
@@ -423,189 +258,136 @@ describe("getPreviousQuestion", () => {
 
   it("returns the first question from the second, on the célibataire branch", () => {
     const answers: Answers = { "situation-conjugale": "celibataire" };
-    expect(getPreviousQuestion(Q, answers, "fiche-paie-disponible")?.id).toBe(
-      "situation-conjugale",
-    );
+    expect(getPreviousQuestion(Q, answers, "revenus")?.id).toBe("situation-conjugale");
   });
 
-  it("returns nombre-enfants-a-charge from fiche-paie-disponible, on the couple branch", () => {
+  it("returns nombre-enfants-a-charge from revenus, on the couple branch", () => {
     const answers: Answers = { "situation-conjugale": "couple" };
-    expect(getPreviousQuestion(Q, answers, "fiche-paie-disponible")?.id).toBe(
-      "nombre-enfants-a-charge",
-    );
+    expect(getPreviousQuestion(Q, answers, "revenus")?.id).toBe("nombre-enfants-a-charge");
   });
 
-  it("returns the salary question from either salary branch", () => {
-    const exact: Answers = { "situation-conjugale": "celibataire", "fiche-paie-disponible": true };
-    expect(getPreviousQuestion(Q, exact, "salaire-net-imposable-2025")?.id).toBe(
-      "fiche-paie-disponible",
-    );
-
-    const estimate: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": false,
-    };
-    expect(getPreviousQuestion(Q, estimate, "salaire-brut-annuel-2025")?.id).toBe(
-      "fiche-paie-disponible",
-    );
+  it("returns revenus from fiche-paie-disponible", () => {
+    const answers: Answers = { "situation-conjugale": "celibataire", revenus: ["salaire"] };
+    expect(getPreviousQuestion(Q, answers, "fiche-paie-disponible")?.id).toBe("revenus");
   });
 
-  it("returns the salary question from chomage, on the célibataire branch", () => {
+  it("returns activites-annexes from qui-activite-independante", () => {
     const answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": ["micro-entreprise"],
     };
-    expect(getPreviousQuestion(Q, answers, "chomage")?.id).toBe("salaire-net-imposable-2025");
-  });
-
-  it("returns chomage from pension when chomage is unanswered (montant-chomage-2025 not visible)", () => {
-    const answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-    };
-    expect(getPreviousQuestion(Q, answers, "pension")?.id).toBe("chomage");
-  });
-
-  it("returns pension from foncier when pension is unanswered (montant-pension-2025 not visible)", () => {
-    const answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-    };
-    expect(getPreviousQuestion(Q, answers, "foncier")?.id).toBe("pension");
+    expect(getPreviousQuestion(Q, answers, "qui-activite-independante")?.id).toBe(
+      "activites-annexes",
+    );
   });
 });
 
 describe("answerQuestion (cascade clear)", () => {
-  it("clears couple-only downstream answers when situation-conjugale flips to célibataire, but keeps vous-only chomage/pension/foncier", () => {
+  it("clears couple-only answers when situation-conjugale flips to célibataire, but keeps revenus/activites-annexes and their details", () => {
     let answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 2,
+      revenus: ["salaire"],
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 30_000,
-      chomage: false,
-      pension: false,
-      "conjoint-a-un-salaire": true,
-      "fiche-paie-disponible-conjoint": true,
-      "salaire-net-imposable-2025-conjoint": 30_000,
-      "chomage-conjoint": true,
+      "revenus-conjoint": ["chomage"],
       "montant-chomage-2025-conjoint": 6_000,
-      "pension-conjoint": true,
-      "montant-pension-2025-conjoint": 8_000,
-      foncier: true,
+      "activites-annexes": ["foncier"],
       "montant-foncier-2025": 6_000,
     };
     answers = answerQuestion(Q, answers, "situation-conjugale", "celibataire");
     expect(answers).toEqual({
       "situation-conjugale": "celibataire",
+      revenus: ["salaire"],
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 30_000,
-      chomage: false,
-      pension: false,
-      foncier: true,
+      "activites-annexes": ["foncier"],
       "montant-foncier-2025": 6_000,
     });
   });
 
-  it("clears conjoint salary answers when conjoint-a-un-salaire flips to false, but keeps chomage-conjoint/pension-conjoint/foncier (independent questions)", () => {
+  it("clears fiche-paie-disponible and the salary amount when revenus drops 'salaire', but keeps other checked amounts", () => {
+    let answers: Answers = {
+      "situation-conjugale": "celibataire",
+      revenus: ["salaire", "chomage"],
+      "fiche-paie-disponible": true,
+      "salaire-net-imposable-2025": 28_000,
+      "montant-chomage-2025": 3_000,
+    };
+    answers = answerQuestion(Q, answers, "revenus", ["chomage"]);
+    expect(answers).toEqual({
+      "situation-conjugale": "celibataire",
+      revenus: ["chomage"],
+      "montant-chomage-2025": 3_000,
+    });
+  });
+
+  it("clears qui-activite-independante and both detail branches when activites-annexes drops 'micro-entreprise', but keeps foncier", () => {
     let answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 0,
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 30_000,
-      chomage: false,
-      pension: false,
-      "conjoint-a-un-salaire": true,
-      "fiche-paie-disponible-conjoint": true,
-      "salaire-net-imposable-2025-conjoint": 30_000,
-      "chomage-conjoint": true,
-      "montant-chomage-2025-conjoint": 6_000,
-      "pension-conjoint": true,
-      "montant-pension-2025-conjoint": 8_000,
-      foncier: true,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": ["foncier", "micro-entreprise"],
       "montant-foncier-2025": 6_000,
+      "qui-activite-independante": ["toi", "conjoint"],
+      "type-activite-independante": "vente",
+      "chiffre-affaires-independant-2025": 10_000,
+      "type-activite-independante-conjoint": "liberale",
+      "chiffre-affaires-independant-2025-conjoint": 8_000,
     };
-    answers = answerQuestion(Q, answers, "conjoint-a-un-salaire", false);
+    answers = answerQuestion(Q, answers, "activites-annexes", ["foncier"]);
     expect(answers).toEqual({
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 0,
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 30_000,
-      chomage: false,
-      pension: false,
-      "conjoint-a-un-salaire": false,
-      "chomage-conjoint": true,
-      "montant-chomage-2025-conjoint": 6_000,
-      "pension-conjoint": true,
-      "montant-pension-2025-conjoint": 8_000,
-      foncier: true,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": ["foncier"],
       "montant-foncier-2025": 6_000,
+    });
+  });
+
+  it("clears only the conjoint's activity detail when qui-activite-independante drops 'conjoint'", () => {
+    let answers: Answers = {
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": ["micro-entreprise"],
+      "qui-activite-independante": ["toi", "conjoint"],
+      "type-activite-independante": "vente",
+      "chiffre-affaires-independant-2025": 10_000,
+      "type-activite-independante-conjoint": "liberale",
+      "chiffre-affaires-independant-2025-conjoint": 8_000,
+    };
+    answers = answerQuestion(Q, answers, "qui-activite-independante", ["toi"]);
+    expect(answers).toEqual({
+      "situation-conjugale": "couple",
+      "nombre-enfants-a-charge": 0,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": ["micro-entreprise"],
+      "qui-activite-independante": ["toi"],
+      "type-activite-independante": "vente",
+      "chiffre-affaires-independant-2025": 10_000,
     });
   });
 
   it("clears the net-imposable answer when fiche-paie-disponible flips to false", () => {
     let answers: Answers = {
       "situation-conjugale": "celibataire",
+      revenus: ["salaire"],
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
     };
     answers = answerQuestion(Q, answers, "fiche-paie-disponible", false);
     expect(answers).toEqual({
       "situation-conjugale": "celibataire",
+      revenus: ["salaire"],
       "fiche-paie-disponible": false,
-    });
-  });
-
-  it("clears montant-chomage-2025 when chomage flips to false", () => {
-    let answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      chomage: true,
-      "montant-chomage-2025": 3_000,
-    };
-    answers = answerQuestion(Q, answers, "chomage", false);
-    expect(answers).toEqual({
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      chomage: false,
-    });
-  });
-
-  it("clears montant-pension-2025 when pension flips to false", () => {
-    let answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      pension: true,
-      "montant-pension-2025": 2_000,
-    };
-    answers = answerQuestion(Q, answers, "pension", false);
-    expect(answers).toEqual({
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      pension: false,
-    });
-  });
-
-  it("clears montant-foncier-2025 when foncier flips to false", () => {
-    let answers: Answers = {
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      foncier: true,
-      "montant-foncier-2025": 6_000,
-    };
-    answers = answerQuestion(Q, answers, "foncier", false);
-    expect(answers).toEqual({
-      "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      foncier: false,
     });
   });
 });
@@ -623,33 +405,22 @@ describe("isQuestionnaireComplete", () => {
     expect(isQuestionnaireComplete(Q, { "situation-conjugale": "autre" })).toBe(true);
   });
 
-  it("is true once the célibataire exact-path branch, chomage/pension/foncier/activite-independante included, is fully answered", () => {
+  it("is true once a célibataire with nothing checked is fully answered", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      chomage: false,
-      pension: false,
-      foncier: false,
-      "activite-independante": false,
+      revenus: [],
+      "activites-annexes": [],
     };
     expect(isQuestionnaireComplete(Q, answers)).toBe(true);
   });
 
-  it("is true once the couple branch (no conjoint salary), chomage/pension/foncier/activite-independante included, is fully answered", () => {
+  it("is true once a couple with nothing checked anywhere is fully answered", () => {
     const answers: Answers = {
       "situation-conjugale": "couple",
       "nombre-enfants-a-charge": 1,
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
-      chomage: false,
-      pension: false,
-      "conjoint-a-un-salaire": false,
-      "chomage-conjoint": false,
-      "pension-conjoint": false,
-      foncier: false,
-      "activite-independante": false,
-      "activite-independante-conjoint": false,
+      revenus: [],
+      "revenus-conjoint": [],
+      "activites-annexes": [],
     };
     expect(isQuestionnaireComplete(Q, answers)).toBe(true);
   });
@@ -660,21 +431,20 @@ describe("getProgress", () => {
     expect(getProgress(Q, {}, "situation-conjugale")).toEqual({ position: 1, total: 1 });
   });
 
-  it("reports 2 of 11 on nombre-enfants-a-charge for a couple", () => {
-    // total = 11 dès ce stade : conjoint-a-un-salaire, chomage, pension,
-    // chomage-conjoint, pension-conjoint, foncier et les deux activite-
-    // independante sont déjà visibles (ne dépendent que de situation-
-    // conjugale), même s'ils ne sont atteints qu'après dans l'ordre du tableau.
+  it("reports 2 of 5 on nombre-enfants-a-charge for a couple", () => {
+    // total = 5 dès ce stade : revenus, revenus-conjoint et activites-annexes sont
+    // déjà visibles (ne dépendent que de situation-conjugale), même s'ils ne sont
+    // atteints qu'après dans l'ordre du tableau.
     const answers: Answers = { "situation-conjugale": "couple" };
-    expect(getProgress(Q, answers, "nombre-enfants-a-charge")).toEqual({ position: 2, total: 11 });
+    expect(getProgress(Q, answers, "nombre-enfants-a-charge")).toEqual({ position: 2, total: 5 });
   });
 
   it("reports position = total when complete (currentQuestionId undefined)", () => {
     const answers: Answers = {
       "situation-conjugale": "celibataire",
-      "fiche-paie-disponible": true,
-      "salaire-net-imposable-2025": 28_000,
+      revenus: [],
+      "activites-annexes": [],
     };
-    expect(getProgress(Q, answers, undefined)).toEqual({ position: 7, total: 7 });
+    expect(getProgress(Q, answers, undefined)).toEqual({ position: 3, total: 3 });
   });
 });

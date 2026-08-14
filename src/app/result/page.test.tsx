@@ -19,6 +19,7 @@ describe("ResultPage", () => {
   it("renders the three expected lines for the exact-path scenario", async () => {
     seedAnswers({
       "situation-conjugale": "celibataire",
+      revenus: ["salaire"],
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
     });
@@ -32,6 +33,7 @@ describe("ResultPage", () => {
   it("renders a warning for the estimation-path scenario", async () => {
     seedAnswers({
       "situation-conjugale": "celibataire",
+      revenus: ["salaire"],
       "fiche-paie-disponible": false,
       "salaire-brut-annuel-2025": 35_000,
     });
@@ -51,9 +53,9 @@ describe("ResultPage", () => {
   it("renders a recap table listing every case, but not the code-less computed lines", async () => {
     seedAnswers({
       "situation-conjugale": "celibataire",
+      revenus: ["salaire", "chomage"],
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 20_000,
-      chomage: true,
       "montant-chomage-2025": 5_000,
     });
     render(<ResultPage />);

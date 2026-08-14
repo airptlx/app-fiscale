@@ -3,6 +3,7 @@ import type { Answers, DeclarationLine, DeclarationResult, TauxPrelevementSource
 import {
   ABATTEMENT_10_PLAFOND_2025,
   ABATTEMENT_10_PLANCHER_2025,
+  ANNEE_REVENUS_2025,
   BAREME_2025,
   DECOTE_CELIBATAIRE_2025,
   DECOTE_COUPLE_2025,
@@ -18,6 +19,14 @@ import {
   PLAFOND_QUOTIENT_FAMILIAL_DEMI_PART_2025,
 } from "./constants";
 import { estimateNetImposableFromBrut } from "./estimation";
+
+/** Les réponses aux questions à choix multiple (`revenus`, `activites-annexes`, ...) sont des tableaux de valeurs cochées. */
+function includesOption(value: unknown, option: string): boolean {
+  return Array.isArray(value) && (value as string[]).includes(option);
+}
+
+/** Même gabarit que `questions.ts` — jamais dérivé de la date du jour, cf. cette constante. */
+const ANNEE_LABEL = `l'année dernière (${ANNEE_REVENUS_2025})`;
 
 /** CGI art. 83, 3° + BOI-BAREME-000035 : abattement 10%, plancher/plafond, jamais > au salaire lui-même. */
 export function computeTaxableIncome(netImposable: number): number {
@@ -103,11 +112,18 @@ export function computeQuotientFamilialTax(
  * Résout le salaire net imposable d'un déclarant à partir des réponses : soit
  * saisi directement (exact), soit estimé à partir du brut annuel (heuristique,
  * cf. estimation.ts). `suffix` distingue "vous" ("") du conjoint ("-conjoint").
+ * Le salaire est optionnel (choix multiple `revenus`/`revenus-conjoint`, cf. plan
+ * incrément 9) : si non coché, retourne 0 sans passer par la branche estimation
+ * (sinon on obtiendrait à tort un avertissement "estimation" sur un brut de 0€).
  */
 export function resolveNetImposable(
   answers: Answers,
   suffix: "" | "-conjoint" = "",
 ): { netImposable: number; isEstimate: boolean } {
+  if (!includesOption(answers[`revenus${suffix}`], "salaire")) {
+    return { netImposable: 0, isEstimate: false };
+  }
+
   const ficheDePaieDisponible = answers[`fiche-paie-disponible${suffix}`] === true;
 
   if (ficheDePaieDisponible) {
@@ -131,7 +147,7 @@ export function resolveNetImposable(
  * abattement séparé. `suffix` distingue "vous" ("") du conjoint ("-conjoint").
  */
 export function resolveChomage(answers: Answers, suffix: "" | "-conjoint" = ""): number {
-  if (answers[`chomage${suffix}`] !== true) return 0;
+  if (!includesOption(answers[`revenus${suffix}`], "chomage")) return 0;
   return Number(answers[`montant-chomage-2025${suffix}`] ?? 0);
 }
 
@@ -140,7 +156,7 @@ export function resolveChomage(answers: Answers, suffix: "" | "-conjoint" = ""):
  * salaires/chômage. `suffix` distingue "vous" ("") du conjoint ("-conjoint").
  */
 export function resolvePension(answers: Answers, suffix: "" | "-conjoint" = ""): number {
-  if (answers[`pension${suffix}`] !== true) return 0;
+  if (!includesOption(answers[`revenus${suffix}`], "pension")) return 0;
   return Number(answers[`montant-pension-2025${suffix}`] ?? 0);
 }
 
@@ -170,7 +186,7 @@ export function computePensionTaxableIncome(pensionVous: number, pensionConjoint
  * vous/conjoint — contrairement au salaire/chômage/pension), cf. plan incrément 7.
  */
 export function resolveFoncier(answers: Answers): number {
-  if (answers["foncier"] !== true) return 0;
+  if (!includesOption(answers["activites-annexes"], "foncier")) return 0;
   return Number(answers["montant-foncier-2025"] ?? 0);
 }
 
@@ -223,15 +239,30 @@ const MICRO_ACTIVITE_INFO: Record<
 /**
  * Une seule activité de micro-entrepreneur par déclarant (pas de cumul vente +
  * service + libérale pour la même personne, cf. plan incrément 8). `suffix`
- * distingue "vous" ("") du conjoint ("-conjoint").
+ * distingue "vous" ("") du conjoint ("-conjoint"). Rattachée au choix multiple
+ * `activites-annexes` (option "micro-entreprise") ; pour un couple, la question
+ * `qui-activite-independante` précise en plus à qui elle appartient — en
+ * célibataire, elle est nécessairement "à toi", pas de question supplémentaire
+ * (cf. plan incrément 9).
  */
 export function resolveActiviteIndependante(
   answers: Answers,
   suffix: "" | "-conjoint" = "",
 ): { type: TypeActiviteIndependante | undefined; chiffreAffaires: number } {
-  if (answers[`activite-independante${suffix}`] !== true) {
+  if (!includesOption(answers["activites-annexes"], "micro-entreprise")) {
     return { type: undefined, chiffreAffaires: 0 };
   }
+
+  const isCouple = answers["situation-conjugale"] === "couple";
+  if (isCouple) {
+    const personne = suffix === "-conjoint" ? "conjoint" : "toi";
+    if (!includesOption(answers["qui-activite-independante"], personne)) {
+      return { type: undefined, chiffreAffaires: 0 };
+    }
+  } else if (suffix === "-conjoint") {
+    return { type: undefined, chiffreAffaires: 0 };
+  }
+
   const type = answers[`type-activite-independante${suffix}`] as TypeActiviteIndependante | undefined;
   const chiffreAffaires = Number(answers[`chiffre-affaires-independant-2025${suffix}`] ?? 0);
   return { type, chiffreAffaires };
@@ -344,14 +375,14 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   }
 
   const vous = resolveNetImposable(answers, "");
-  const conjointASalaire = isCouple && answers["conjoint-a-un-salaire"] === true;
+  const conjointASalaire = isCouple && includesOption(answers["revenus-conjoint"], "salaire");
   const conjoint = conjointASalaire
     ? resolveNetImposable(answers, "-conjoint")
     : { netImposable: 0, isEstimate: false };
 
-  const chomageDeclare = answers["chomage"] === true;
+  const chomageDeclare = includesOption(answers["revenus"], "chomage");
   const chomageVous = resolveChomage(answers, "");
-  const chomageConjointDeclare = isCouple && answers["chomage-conjoint"] === true;
+  const chomageConjointDeclare = isCouple && includesOption(answers["revenus-conjoint"], "chomage");
   const chomageConjoint = chomageConjointDeclare ? resolveChomage(answers, "-conjoint") : 0;
   const conjointADesRevenus = conjointASalaire || chomageConjointDeclare;
 
@@ -360,13 +391,13 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     ? computeTaxableIncome(conjoint.netImposable + chomageConjoint)
     : 0;
 
-  const pensionDeclare = answers["pension"] === true;
+  const pensionDeclare = includesOption(answers["revenus"], "pension");
   const pensionVous = resolvePension(answers, "");
-  const pensionConjointDeclare = isCouple && answers["pension-conjoint"] === true;
+  const pensionConjointDeclare = isCouple && includesOption(answers["revenus-conjoint"], "pension");
   const pensionConjoint = pensionConjointDeclare ? resolvePension(answers, "-conjoint") : 0;
   const taxableIncomePensions = computePensionTaxableIncome(pensionVous, pensionConjoint);
 
-  const foncierDeclare = answers["foncier"] === true;
+  const foncierDeclare = includesOption(answers["activites-annexes"], "foncier");
   const taxableIncomeFoncier = computeFoncierTaxableIncome(recettesBrutesFoncier);
 
   const taxableIncomeActiviteVous = activiteVous.type
@@ -397,7 +428,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       value: vous.netImposable,
       explanation: vous.isEstimate
         ? "Estimation calculée à partir de ton salaire brut annuel (environ 80% du brut) — à confirmer avec ta fiche de paie de décembre avant de déclarer."
-        : "C'est le montant « Net imposable » indiqué sur ton bulletin de salaire de décembre 2025 (cumul annuel), à reporter dans la case 1AJ.",
+        : `C'est le montant « Net imposable » indiqué sur ton bulletin de salaire de décembre de ${ANNEE_LABEL} (cumul annuel), à reporter dans la case 1AJ.`,
       source: "impots.gouv.fr — Salaires et assimilés",
     },
   ];
@@ -422,7 +453,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       value: conjoint.netImposable,
       explanation: conjoint.isEstimate
         ? "Estimation calculée à partir du salaire brut annuel de ton/ta conjoint·e (environ 80% du brut) — à confirmer avec sa fiche de paie de décembre avant de déclarer."
-        : "C'est le montant « Net imposable » indiqué sur le bulletin de salaire de décembre 2025 de ton/ta conjoint·e (cumul annuel), à reporter dans la case 1BJ.",
+        : `C'est le montant « Net imposable » indiqué sur le bulletin de salaire de décembre de ${ANNEE_LABEL} de ton/ta conjoint·e (cumul annuel), à reporter dans la case 1BJ.`,
       source: "impots.gouv.fr — Salaires et assimilés",
     });
   }
@@ -496,8 +527,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
   lines.push({
     label: "Revenu imposable retenu pour le foyer, après abattement de 10% pour frais professionnels",
     value: taxableIncomeVous + taxableIncomeConjoint,
-    explanation:
-      "L'administration applique automatiquement un abattement de 10% sur l'ensemble des sommes touchées par chaque déclarant au titre du salaire et, le cas échéant, des allocations chômage (au moins 509€, au plus 14 555€ chacun pour les revenus 2025), pour couvrir forfaitairement ses frais professionnels courants.",
+    explanation: `L'administration applique automatiquement un abattement de 10% sur l'ensemble des sommes touchées par chaque déclarant au titre du salaire et, le cas échéant, des allocations chômage (au moins 509€, au plus 14 555€ chacun pour les revenus de ${ANNEE_LABEL}), pour couvrir forfaitairement ses frais professionnels courants.`,
     source: "CGI art. 83, 3° ; BOFiP BOI-BAREME-000035, BOI-RSA-BASE-30-50-20",
   });
 
@@ -545,7 +575,7 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     {
       label: "Impôt sur le revenu (avant réductions et crédits d'impôt éventuels)",
       value: tax,
-      explanation: `Calculé par tranches selon le barème progressif applicable aux revenus 2025, en tenant compte de ton quotient familial (${formatParts(parts)} part${parts > 1 ? "s" : ""}) et de la décote pour les revenus modestes.`,
+      explanation: `Calculé par tranches selon le barème progressif applicable aux revenus de ${ANNEE_LABEL}, en tenant compte de ton quotient familial (${formatParts(parts)} part${parts > 1 ? "s" : ""}) et de la décote pour les revenus modestes.`,
       source: "CGI art. 194 et 197",
     },
   );

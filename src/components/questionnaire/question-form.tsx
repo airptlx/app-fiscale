@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -47,6 +48,9 @@ export function QuestionForm({ question, value, onSubmit }: QuestionFormProps) {
       )}
       {question.type === "single-choice" && (
         <SingleChoiceAnswer question={question} value={value} headingId={headingId} onSubmit={onSubmit} />
+      )}
+      {question.type === "multi-choice" && (
+        <MultiChoiceAnswer question={question} value={value} headingId={headingId} onSubmit={onSubmit} />
       )}
       {question.type === "number" && (
         <NumberAnswer
@@ -111,6 +115,52 @@ function SingleChoiceAnswer({
         ))}
       </RadioGroup>
       <Button type="submit" disabled={draft === undefined} className="self-start">
+        Suivant
+      </Button>
+    </form>
+  );
+}
+
+function MultiChoiceAnswer({
+  question,
+  value,
+  headingId,
+  onSubmit,
+}: {
+  question: Question;
+  value: AnswerValue;
+  headingId: string;
+  onSubmit: (value: AnswerValue) => void;
+}) {
+  const [draft, setDraft] = useState<string[]>(Array.isArray(value) ? value : []);
+
+  const toggle = (optionValue: string, checked: boolean) => {
+    setDraft((current) =>
+      checked ? [...current, optionValue] : current.filter((v) => v !== optionValue),
+    );
+  };
+
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(draft);
+      }}
+    >
+      <div role="group" aria-labelledby={headingId} className="flex flex-col gap-3">
+        {question.options?.map((option) => (
+          <div key={option.value} className="flex items-center gap-2">
+            <Checkbox
+              id={`${question.id}-${option.value}`}
+              checked={draft.includes(option.value)}
+              onCheckedChange={(checked) => toggle(option.value, checked === true)}
+            />
+            <Label htmlFor={`${question.id}-${option.value}`}>{option.label}</Label>
+          </div>
+        ))}
+      </div>
+      <Button type="submit" className="self-start">
         Suivant
       </Button>
     </form>

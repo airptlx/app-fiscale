@@ -1,8 +1,9 @@
+import { ANNEE_REVENUS_2025 } from "./2025/constants";
 import { computeDeclaration as computeDeclaration2025 } from "./2025/compute";
 import { QUESTIONS_2025 } from "./2025/questions";
 import type { Answers, DeclarationResult, Question } from "./types";
 
-export const CURRENT_TAX_YEAR = 2025;
+export const CURRENT_TAX_YEAR = ANNEE_REVENUS_2025;
 
 export interface TaxYearModule {
   year: number;
@@ -11,10 +12,10 @@ export interface TaxYearModule {
 }
 
 const REGISTRY: Record<number, TaxYearModule> = {
-  2025: {
-    year: 2025,
+  [ANNEE_REVENUS_2025]: {
+    year: ANNEE_REVENUS_2025,
     questions: QUESTIONS_2025,
-    computeDeclaration: (answers) => computeDeclaration2025(answers, 2025),
+    computeDeclaration: (answers) => computeDeclaration2025(answers, ANNEE_REVENUS_2025),
   },
 };
 

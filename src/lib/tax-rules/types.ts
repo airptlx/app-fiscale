@@ -1,8 +1,8 @@
 export type QuestionId = string;
-export type AnswerValue = string | number | boolean | undefined;
+export type AnswerValue = string | number | boolean | string[] | undefined;
 export type Answers = Record<QuestionId, AnswerValue>;
 
-export type QuestionType = "boolean" | "number" | "single-choice";
+export type QuestionType = "boolean" | "number" | "single-choice" | "multi-choice";
 
 export interface QuestionOption {
   value: string;

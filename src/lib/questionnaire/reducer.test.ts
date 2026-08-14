@@ -26,13 +26,14 @@ describe("questionnaireReducer", () => {
       questions: Q,
       answers: savedAnswers,
     });
-    expect(state.currentQuestionId).toBe("fiche-paie-disponible");
+    expect(state.currentQuestionId).toBe("revenus");
     expect(state.answers).toEqual(savedAnswers);
   });
 
-  it("HYDRATE resumes on chomage once the salary sub-flow is answered", () => {
+  it("HYDRATE resumes on montant-chomage-2025 once the salary sub-flow is answered", () => {
     const savedAnswers: Answers = {
       "situation-conjugale": "celibataire",
+      revenus: ["salaire", "chomage"],
       "fiche-paie-disponible": true,
       "salaire-net-imposable-2025": 28_000,
     };
@@ -41,7 +42,7 @@ describe("questionnaireReducer", () => {
       questions: Q,
       answers: savedAnswers,
     });
-    expect(state.currentQuestionId).toBe("chomage");
+    expect(state.currentQuestionId).toBe("montant-chomage-2025");
   });
 
   it("HYDRATE with a complete answer set has no current question", () => {
@@ -61,7 +62,7 @@ describe("questionnaireReducer", () => {
       questionId: "situation-conjugale",
       value: "celibataire",
     });
-    expect(state.currentQuestionId).toBe("fiche-paie-disponible");
+    expect(state.currentQuestionId).toBe("revenus");
     expect(state.answers).toEqual({ "situation-conjugale": "celibataire" });
   });
 
@@ -96,10 +97,13 @@ describe("questionnaireReducer", () => {
 
   it("BACK moves to the previous visible question", () => {
     const state = questionnaireReducer(
-      { answers: { "situation-conjugale": "celibataire" }, currentQuestionId: "fiche-paie-disponible" },
+      {
+        answers: { "situation-conjugale": "celibataire", revenus: ["salaire"] },
+        currentQuestionId: "fiche-paie-disponible",
+      },
       { type: "BACK", questions: Q },
     );
-    expect(state.currentQuestionId).toBe("situation-conjugale");
+    expect(state.currentQuestionId).toBe("revenus");
   });
 
   it("BACK no-ops on the first question", () => {
