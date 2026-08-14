@@ -33,13 +33,15 @@ Exemple : au lieu de "Optez-vous pour l'abattement forfaitaire de 10% ou les fra
 - Taux de prélèvement à la source (PAS) : taux foyer et taux individualisé (défaut couples depuis le 01/09/2025), affichés sur l'écran de résultat avec explication (CGI art. 204 H). Le taux individualisé n'est pas calculé pour un couple ayant des revenus fonciers (revenu commun, formule non encore étendue aux revenus communs — seul le taux foyer est alors affiché, avec avertissement). La grille de taux neutre (cas d'un nouvel employeur sans taux encore transmis) répond à un besoin différent et n'est pas couverte.
 - 3 à 5 crédits/déductions courants : dons, frais de garde d'enfants, emploi à domicile, versements PER.
 - Conseil « comptes crypto à l'étranger » (obligation déclarative formulaire 3916-bis, CGI art. 1649 bis C) : purement informatif, aucun calcul de plus-value (formulaire 2086, hors scope).
+- Revenus de capitaux mobiliers hors PEA : dividendes (case 2DC) et plus-values de cession de valeurs mobilières (case 3VG), au niveau du foyer (pas de distinction vous/conjoint — comme le foncier), imposés au prélèvement forfaitaire unique (PFU) à 30% par défaut (12,8% IR + 17,2% prélèvements sociaux, CGI art. 200 A), ligne séparée du barème progressif et du taux de prélèvement à la source. L'option pour le barème (case 2OP, abattement 40% dividendes) n'est pas prise en charge. Une moins-value nette (sans plus-value associée) n'est pas calculée.
+- Conseil PEA (Plan d'Épargne en Actions) : si détenu plus de 5 ans sans retrait disqualifiant, rappel que les gains sont exonérés d'IR (rien à déclarer ici) ; sinon, conseil de prudence — le régime devient complexe et n'est pas calculé par cet outil (CGI art. 150-0 A, III-5).
 - Écran de résultat, en onglets (Détail / Cases à vérifier / Conseils) : liste des lignes à remplir + explications + avertissement + conseils éventuels sur des démarches hors de cette déclaration.
 
 **Roadmap « revenus annexes » (planifiée, incréments dédiés — voir plan incrément 4)** — chacun de ces points nécessite son propre cycle Plan Mode avant implémentation, distinct du cas traitements et salaires :
 - Célibataire avec enfant(s) à charge (« parent isolé », demi-part majorée et plafond spécifique — distinct du cas couple+enfants, cf. `docs/tax-rules-sources.md`).
 
 **Explicitement différé, hors roadmap actuelle :**
-- Revenus fonciers au régime réel (au-delà du micro-foncier planifié ci-dessus), indépendants au régime réel (au-delà du micro-BIC/micro-BNC planifié ci-dessus), plus-values, revenus de capitaux mobiliers.
+- Revenus fonciers au régime réel (au-delà du micro-foncier planifié ci-dessus), indépendants au régime réel (au-delà du micro-BIC/micro-BNC planifié ci-dessus), intérêts (livrets, obligations), option barème/2OP pour les revenus de capitaux mobiliers, PEA en dehors du cas simple (+5 ans sans retrait disqualifiant), plus-value crypto (formulaire 2086).
 - Non-résidents / expatriés.
 - Situations familiales complexes autres que parent isolé (garde alternée, rattachement d'enfants majeurs, veuvage).
 - Dispositifs de défiscalisation niche (Pinel, etc.).

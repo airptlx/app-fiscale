@@ -6,14 +6,17 @@ import {
   computeMicroTaxableIncome,
   computeParts,
   computePensionTaxableIncome,
+  computePFU,
   computeProgressiveTax,
   computeTauxPrelevementSourceFoyer,
   computeTauxPrelevementSourceIndividualise,
   computeTaxableIncome,
   resolveActiviteIndependante,
   resolveChomage,
+  resolveDividendes,
   resolveFoncier,
   resolvePension,
+  resolvePlusValueTitres,
 } from "./compute";
 import { estimateNetImposableFromBrut } from "./estimation";
 
@@ -951,5 +954,179 @@ describe("computeDeclaration (2025, conseil crypto — comptes d'actifs numériq
     );
     expect(result.lines.map((l) => l.code)).toContain("4BE");
     expect(result.conseils).toHaveLength(1);
+  });
+});
+
+describe("resolveDividendes / resolvePlusValueTitres", () => {
+  it("are 0 when not checked", () => {
+    expect(resolveDividendes({})).toBe(0);
+    expect(resolvePlusValueTitres({})).toBe(0);
+  });
+  it("read the declared amounts when checked", () => {
+    expect(
+      resolveDividendes({ "activites-annexes": ["dividendes"], "montant-dividendes-2025": 5_000 }),
+    ).toBe(5_000);
+    expect(
+      resolvePlusValueTitres({
+        "activites-annexes": ["plus-value-titres"],
+        "montant-plus-value-titres-2025": 3_000,
+      }),
+    ).toBe(3_000);
+  });
+});
+
+describe("computePFU (CGI art. 200 A — 30% pour les revenus 2025)", () => {
+  it("is 0 when there is neither dividende nor plus-value", () => {
+    expect(computePFU(0, 0)).toBe(0);
+  });
+  it("applies a plain 30% on dividends alone", () => {
+    expect(computePFU(5_000, 0)).toBe(1_500);
+  });
+  it("applies a plain 30% on the sum of dividends and plus-value", () => {
+    expect(computePFU(5_000, 3_000)).toBe(2_400);
+  });
+});
+
+describe("computeDeclaration (2025, revenus de capitaux mobiliers — cases 2DC/3VG, PFU)", () => {
+  it("adds a 2DC line and a separate PFU line for dividends alone", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+        "activites-annexes": ["dividendes"],
+        "montant-dividendes-2025": 5_000,
+      },
+      2025,
+    );
+    const codes = result.lines.map((l) => l.code);
+    expect(codes).toContain("2DC");
+    const pfuLine = result.lines.find((l) => l.label.includes("PFU"));
+    expect(pfuLine).toEqual(expect.objectContaining({ value: 1_500 }));
+  });
+
+  it("adds a 3VG line and combines dividends + plus-value into a single PFU line", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+        "activites-annexes": ["dividendes", "plus-value-titres"],
+        "montant-dividendes-2025": 5_000,
+        "montant-plus-value-titres-2025": 3_000,
+      },
+      2025,
+    );
+    const codes = result.lines.map((l) => l.code);
+    expect(codes).toContain("2DC");
+    expect(codes).toContain("3VG");
+    const pfuLines = result.lines.filter((l) => l.label.includes("PFU"));
+    expect(pfuLines).toHaveLength(1);
+    expect(pfuLines[0].value).toBe(2_400);
+  });
+
+  it("does not affect the barème-computed 'Impôt sur le revenu' line nor the PAS rate (PFU is a separate mechanism)", () => {
+    const withoutCapital = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    const withCapital = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+        "activites-annexes": ["dividendes"],
+        "montant-dividendes-2025": 5_000,
+      },
+      2025,
+    );
+    const irLine = (r: typeof withoutCapital) =>
+      r.lines.find((l) => l.label.startsWith("Impôt sur le revenu"));
+    expect(irLine(withCapital)?.value).toBe(irLine(withoutCapital)?.value);
+    expect(withCapital.tauxPrelevementSource.foyer).toBe(withoutCapital.tauxPrelevementSource.foyer);
+  });
+
+  it("does not add capital-income lines when nothing is checked (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.lines.map((l) => l.code)).toEqual(["1AJ", undefined, undefined]);
+    expect(result.lines.some((l) => l.label.includes("PFU"))).toBe(false);
+  });
+});
+
+describe("computeDeclaration (2025, conseil PEA)", () => {
+  it("adds a reassuring conseil for a PEA held more than 5 years without a disqualifying withdrawal", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+        "activites-annexes": ["pea"],
+        "pea-cinq-ans": true,
+      },
+      2025,
+    );
+    expect(result.conseils).toHaveLength(1);
+    expect(result.conseils?.[0].text).toMatch(/exonérés/i);
+  });
+
+  it("adds a caution conseil for a PEA under 5 years or with a disqualifying withdrawal", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+        "activites-annexes": ["pea"],
+        "pea-cinq-ans": false,
+      },
+      2025,
+    );
+    expect(result.conseils).toHaveLength(1);
+    expect(result.conseils?.[0].text).toMatch(/plus complexe/i);
+  });
+
+  it("does not add a PEA conseil when pea is not checked (regression)", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+      },
+      2025,
+    );
+    expect(result.conseils).toBeUndefined();
+  });
+
+  it("adds both the PEA and crypto conseils when both are checked", () => {
+    const result = computeDeclaration(
+      {
+        "situation-conjugale": "celibataire",
+        revenus: ["salaire"],
+        "fiche-paie-disponible": true,
+        "salaire-net-imposable-2025": 28_000,
+        "activites-annexes": ["pea", "crypto"],
+        "pea-cinq-ans": true,
+      },
+      2025,
+    );
+    expect(result.conseils).toHaveLength(2);
   });
 });

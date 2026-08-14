@@ -122,5 +122,35 @@ export const MICRO_BIC_VENTE_TAUX_2025 = 0.71;
 export const MICRO_BIC_SERVICE_TAUX_2025 = 0.5;
 export const MICRO_BNC_TAUX_2025 = 0.34;
 export const MICRO_ABATTEMENT_PLANCHER_2025 = 305;
+
+/**
+ * Prélèvement forfaitaire unique (PFU, « flat tax »), applicable par défaut aux
+ * dividendes (case 2DC) et plus-values de cession de valeurs mobilières hors PEA
+ * (case 3VG) — l'option pour le barème progressif (case 2OP, avec abattement de
+ * 40% sur les dividendes) est hors scope, comme le versement libératoire déjà
+ * exclu pour la micro-entreprise.
+ * Taux valables pour les revenus 2025 uniquement : 12,8% (IR) + 17,2% (prélèvements
+ * sociaux) = 30%. Attention, la plupart des sources en ligne aujourd'hui affichent
+ * déjà le taux 2026 (12,8% + 18,6% = 31,4%, hausse de CSG actée par la LFSS 2026) —
+ * ne pas confondre : ce taux ne s'applique qu'aux revenus perçus à partir du
+ * 1er janvier 2026.
+ * https://www.impots.gouv.fr/particulier/questions/jai-realise-une-plus-value-mobiliere-comment-est-elle-imposee
+ * CGI art. 200 A.
+ * Récupéré le 2026-08-14.
+ */
+export const PFU_TAUX_IR_2025 = 0.128;
+export const PFU_TAUX_SOCIAL_2025 = 0.172;
+export const PFU_TAUX_GLOBAL_2025 = PFU_TAUX_IR_2025 + PFU_TAUX_SOCIAL_2025;
+
+/**
+ * PEA (plan d'épargne en actions), toutes années : tant qu'aucun retrait
+ * n'intervient avant 5 ans, les gains restent dans le plan et n'ont rien à être
+ * déclarés. Après 5 ans, exonération d'IR, seuls les prélèvements sociaux restent
+ * dus (généralement déjà prélevés par l'établissement au retrait) — purement
+ * informatif dans cet outil, aucune valeur numérique associée.
+ * https://www.service-public.gouv.fr/particuliers/vosdroits/F21618
+ * CGI art. 150-0 A, III-5.
+ * Récupéré le 2026-08-14.
+ */
 export const MICRO_SEUIL_VENTE_2025 = 188_700;
 export const MICRO_SEUIL_SERVICE_2025 = 77_700;

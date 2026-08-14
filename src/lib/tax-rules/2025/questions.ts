@@ -182,7 +182,7 @@ export const QUESTIONS_2025: Question[] = [
     type: "multi-choice",
     prompt: `Ton foyer a-t-il eu d'autres revenus ${ANNEE_LABEL} ?`,
     helpText:
-      "Loyers : uniquement la location non meublée (la location meublée n'est pas encore prise en charge). Micro-entreprise : une vraie activité enregistrée, pas un job ponctuel non déclaré.",
+      "Loyers : uniquement la location non meublée (la location meublée n'est pas encore prise en charge). Micro-entreprise : une vraie activité enregistrée, pas un job ponctuel non déclaré. Actions/PEA : coche « PEA » séparément si c'est dans cette enveloppe, les règles sont différentes.",
     options: [
       { value: "foncier", label: "Des loyers (location non meublée)" },
       { value: "micro-entreprise", label: "Une activité de micro-entrepreneur (auto-entrepreneur)" },
@@ -190,6 +190,12 @@ export const QUESTIONS_2025: Question[] = [
         value: "crypto",
         label: "Un compte sur une plateforme d'échange crypto basée à l'étranger (Binance, Kraken, Coinbase...)",
       },
+      { value: "dividendes", label: "Des dividendes d'actions (hors PEA)" },
+      {
+        value: "plus-value-titres",
+        label: "Une plus-value en vendant des actions ou d'autres valeurs mobilières (hors PEA)",
+      },
+      { value: "pea", label: "Un PEA (Plan d'Épargne en Actions)" },
     ],
     isVisible: (answers) => situationConnue(answers["situation-conjugale"]),
   },
@@ -204,6 +210,40 @@ export const QUESTIONS_2025: Question[] = [
       includesOption(answers["activites-annexes"], "foncier"),
     validate: (value) =>
       typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
+  },
+  {
+    id: "montant-dividendes-2025",
+    type: "number",
+    prompt: `Quel est le montant brut total des dividendes que tu as touchés ${ANNEE_LABEL} ?`,
+    helpText:
+      "Montant brut avant tout prélèvement, indiqué sur le document envoyé par ta banque ou ton courtier (IFU). Pas besoin de déduire quoi que ce soit toi-même.",
+    isVisible: (answers) =>
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "dividendes"),
+    validate: (value) =>
+      typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
+  },
+  {
+    id: "montant-plus-value-titres-2025",
+    type: "number",
+    prompt: `Quel est le montant net de cette plus-value ${ANNEE_LABEL} ?`,
+    helpText:
+      "Montant déjà calculé par ta banque ou ton courtier (IFU), après compensation des éventuelles moins-values. Si tu es en perte nette sur l'année, ce n'est pas géré par cet outil pour l'instant — tu peux quand même la reporter toi-même (case 3VH) pour la déduire de gains futurs.",
+    isVisible: (answers) =>
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "plus-value-titres"),
+    validate: (value) =>
+      typeof value === "number" && value >= 0 ? undefined : "Indique un montant positif ou nul.",
+  },
+  {
+    id: "pea-cinq-ans",
+    type: "boolean",
+    prompt: "Ton PEA est-il ouvert depuis plus de 5 ans, sans retrait ayant entraîné sa clôture ?",
+    helpText:
+      "Un retrait avant 5 ans clôture en principe le PEA. Si tu n'es pas sûr·e, regarde simplement la date d'ouverture de ton PEA et si tu as déjà retiré de l'argent.",
+    isVisible: (answers) =>
+      situationConnue(answers["situation-conjugale"]) &&
+      includesOption(answers["activites-annexes"], "pea"),
   },
   {
     id: "qui-activite-independante",

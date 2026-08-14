@@ -16,6 +16,7 @@ import {
   MICRO_SEUIL_VENTE_2025,
   PENSION_ABATTEMENT_PLAFOND_2025,
   PENSION_ABATTEMENT_PLANCHER_2025,
+  PFU_TAUX_GLOBAL_2025,
   PLAFOND_QUOTIENT_FAMILIAL_DEMI_PART_2025,
 } from "./constants";
 import { estimateNetImposableFromBrut } from "./estimation";
@@ -202,6 +203,38 @@ export function computeFoncierTaxableIncome(recettesBrutes: number): number {
   return Math.round(recettesBrutes * 0.7);
 }
 
+/**
+ * Dividendes (case 2DC) : revenu commun au foyer (une seule réponse, pas de
+ * suffixe vous/conjoint) — comme le foncier, et pour la même raison
+ * supplémentaire propre au PFU : le montant d'impôt dû ne dépend pas de qui,
+ * dans le couple, détient le compte-titres (taux fixe, cf. `computePFU`).
+ */
+export function resolveDividendes(answers: Answers): number {
+  if (!includesOption(answers["activites-annexes"], "dividendes")) return 0;
+  return Number(answers["montant-dividendes-2025"] ?? 0);
+}
+
+/**
+ * Plus-value de cession de valeurs mobilières hors PEA (case 3VG) : même
+ * logique foyer que `resolveDividendes`. Montant déjà net (après compensation
+ * des moins-values), tel que fourni par l'IFU du courtier — cf. plan incrément 11.
+ */
+export function resolvePlusValueTitres(answers: Answers): number {
+  if (!includesOption(answers["activites-annexes"], "plus-value-titres")) return 0;
+  return Number(answers["montant-plus-value-titres-2025"] ?? 0);
+}
+
+/**
+ * CGI art. 200 A : prélèvement forfaitaire unique (PFU) à 30% pour les revenus
+ * 2025 (12,8% IR + 17,2% prélèvements sociaux), applicable par défaut aux
+ * dividendes et plus-values de cession de valeurs mobilières hors PEA. Taux
+ * fixe, sans lien avec le quotient familial ou le barème — jamais fusionné
+ * avec `computeProgressiveTax`/`computeQuotientFamilialTax`.
+ */
+export function computePFU(dividendes: number, plusValue: number): number {
+  return Math.round((dividendes + plusValue) * PFU_TAUX_GLOBAL_2025);
+}
+
 export type TypeActiviteIndependante = "vente" | "service" | "liberale";
 
 /**
@@ -358,6 +391,10 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     );
   }
 
+  const dividendes = resolveDividendes(answers);
+  const plusValueTitres = resolvePlusValueTitres(answers);
+  const pfu = computePFU(dividendes, plusValueTitres);
+
   const activiteVous = resolveActiviteIndependante(answers, "");
   if (activiteVous.type && activiteVous.chiffreAffaires > MICRO_ACTIVITE_INFO[activiteVous.type].seuil) {
     throw new UnsupportedSituationError(
@@ -399,6 +436,9 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
 
   const foncierDeclare = includesOption(answers["activites-annexes"], "foncier");
   const taxableIncomeFoncier = computeFoncierTaxableIncome(recettesBrutesFoncier);
+
+  const dividendesDeclare = includesOption(answers["activites-annexes"], "dividendes");
+  const plusValueTitresDeclare = includesOption(answers["activites-annexes"], "plus-value-titres");
 
   const taxableIncomeActiviteVous = activiteVous.type
     ? computeMicroTaxableIncome(activiteVous.chiffreAffaires, activiteVous.type)
@@ -502,6 +542,28 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     });
   }
 
+  if (dividendesDeclare) {
+    lines.push({
+      code: "2DC",
+      label: "Dividendes à déclarer",
+      value: dividendes,
+      explanation:
+        "C'est le montant brut de dividendes perçus par ton foyer, avant tout prélèvement, à reporter dans la case 2DC. Si tu es en couple, ce montant peut se répartir entre vos cases respectives selon vos IFU — ça ne change pas le montant total dû, le taux du PFU étant le même quelle que soit la répartition.",
+      source: "impots.gouv.fr — Revenus des valeurs et capitaux mobiliers ; CGI art. 200 A",
+    });
+  }
+
+  if (plusValueTitresDeclare) {
+    lines.push({
+      code: "3VG",
+      label: "Plus-value de cession de valeurs mobilières à déclarer (hors PEA)",
+      value: plusValueTitres,
+      explanation:
+        "C'est le montant net de la plus-value réalisée par ton foyer (après compensation des moins-values), tel que calculé par ta banque ou ton courtier, à reporter dans la case 3VG. Même remarque que pour les dividendes : la répartition vous/conjoint ne change pas le montant total dû.",
+      source: "impots.gouv.fr — Plus-values de cession de valeurs mobilières ; CGI art. 200 A",
+    });
+  }
+
   if (activiteVous.type) {
     const info = MICRO_ACTIVITE_INFO[activiteVous.type];
     lines.push({
@@ -580,6 +642,16 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
     },
   );
 
+  if (dividendesDeclare || plusValueTitresDeclare) {
+    lines.push({
+      label: "Prélèvement forfaitaire unique (PFU) sur tes revenus du capital",
+      value: pfu,
+      explanation:
+        "30% de tes dividendes et plus-values (12,8% d'impôt sur le revenu + 17,2% de prélèvements sociaux), à taux fixe — ce montant s'ajoute à l'impôt sur le revenu ci-dessus, il n'est pas calculé par tranches ni affecté par ton quotient familial.",
+      source: "CGI art. 200 A",
+    });
+  }
+
   const warnings: string[] = [];
   if (vous.isEstimate || conjoint.isEstimate) {
     warnings.push(
@@ -598,6 +670,19 @@ export function computeDeclaration(answers: Answers, year: number): DeclarationR
       text: "Tu as un compte sur une plateforme crypto basée à l'étranger : aux yeux de l'administration, c'est un compte à l'étranger. Tu dois déclarer son existence chaque année avec le formulaire 3916-bis, séparément de ta déclaration de revenus — même si tu n'as rien vendu et même si le compte est presque vide (une plateforme basée en France n'est pas concernée). Oublier cette déclaration coûte 750€ par compte non déclaré, 1 500€ si sa valeur a dépassé 50 000€ à un moment de l'année. Si tu as aussi vendu des cryptos contre des euros avec un gain, il y a un formulaire séparé (2086) pour ça — non calculé par cet outil pour l'instant.",
       source: "CGI art. 1649 bis C (obligation), art. 1736 X (sanctions) ; impots.gouv.fr — Modalités de déclaration des comptes d'actifs numériques détenus à l'étranger",
     });
+  }
+  if (includesOption(answers["activites-annexes"], "pea")) {
+    if (answers["pea-cinq-ans"] === true) {
+      conseils.push({
+        text: "Ton PEA est ouvert depuis plus de 5 ans sans clôture : ses gains sont exonérés d'impôt sur le revenu, tu n'as rien à indiquer dans cette déclaration pour lui. Seuls les prélèvements sociaux (17,2%) restent dus, mais ils sont généralement déjà prélevés directement par ta banque au moment d'un retrait — vérifie juste que ça a bien été fait avant de considérer que c'est réglé.",
+        source: "CGI art. 150-0 A, III-5 ; service-public.fr — Impôt sur le revenu, plus-values sur valeurs mobilières",
+      });
+    } else {
+      conseils.push({
+        text: "Un PEA de moins de 5 ans, ou avec un retrait ayant entraîné sa clôture, suit un régime plus complexe (le calcul dépend de la date d'ouverture et du motif du retrait) — cet outil ne le calcule pas. Vérifie ta situation sur impots.gouv.fr ou avec un professionnel avant de déclarer.",
+        source: "CGI art. 150-0 A, III-5 ; service-public.fr — Impôt sur le revenu, plus-values sur valeurs mobilières",
+      });
+    }
   }
 
   const rawVous = vous.netImposable + chomageVous + pensionVous + activiteVous.chiffreAffaires;
